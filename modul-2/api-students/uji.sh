@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# Skrip pengujian berurutan untuk api-students.
-# Jalankan server dulu di terminal lain dengan: go run .
-# Lalu: bash uji.sh
-#
-# Setiap perintah memakai curl -i supaya baris status HTTP ikut tercetak,
-# karena laporan mewajibkan status terlihat pada tangkapan layar.
 
 BASE="http://localhost:3000/api/v1"
 
