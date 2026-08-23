@@ -11,13 +11,13 @@ judul() {
 
 judul "1. POST tiga mahasiswa, harapan 201 + header Location"
 curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"082111633001","name":"Zagan Jade","grade":88}'
+  -d '{"nim":"434241084","name":"Vito Aditya","grade":88}'
 echo ""
 curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"082111633002","name":"Bagas Pratama","grade":64}'
+  -d '{"nim":"434241085","name":"Bagas Pratama","grade":64}'
 echo ""
 curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"082111633003","name":"Citra Ayu","grade":91}'
+  -d '{"nim":"434241086","name":"Citra Ayu","grade":91}'
 
 judul "2. GET daftar dengan paginasi, harapan 200 + meta"
 curl -s -i "$BASE/students?page=1&limit=2"
@@ -39,10 +39,10 @@ curl -s -i $BASE/students/abc
 
 judul "8. POST dengan NIM yang sudah dipakai, harapan 409"
 curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"082111633001","name":"Nama Lain","grade":70}'
+  -d '{"nim":"434241084","name":"Nama Lain","grade":70}'
 
 judul "9. POST tanpa Content-Type, harapan 415"
-curl -s -i -X POST $BASE/students -d '{"nim":"082111633009","name":"Tanpa Header","grade":70}'
+curl -s -i -X POST $BASE/students -d '{"nim":"434241084","name":"Tanpa Header","grade":70}'
 
 judul "10. POST dengan isi yang gagal validasi, harapan 422"
 curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
@@ -50,14 +50,14 @@ curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
 
 judul "11. POST dengan JSON rusak, harapan 400"
 curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"082111633010",'
+  -d '{"nim":"434241088",'
 
 judul "12. Data sebelum diubah, simpan tangkapan layar ini"
 curl -s -i $BASE/students/1
 
 judul "13. PUT mengganti seluruh isi, harapan 200"
 curl -s -i -X PUT $BASE/students/1 -H "Content-Type: application/json" \
-  -d '{"nim":"082111633001","name":"Zagan Jade Revisi","grade":75,"is_active":false}'
+  -d '{"nim":"434241084","name":"Vito Aditya Revisi","grade":75,"is_active":false}'
 
 judul "14. PUT tanpa mengirim seluruh field, harapan 422"
 curl -s -i -X PUT $BASE/students/1 -H "Content-Type: application/json" \

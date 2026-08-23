@@ -63,11 +63,11 @@ Basis URL: `http://localhost:3000/api/v1`
 
 | Metode | Endpoint | Parameter | Contoh body permintaan | Status yang mungkin | Contoh respons |
 |---|---|---|---|---|---|
-| GET | /students | Query: `page`, `limit`, `search`, `sort`, `order`, `is_active`, `min_grade`, `max_grade` | tidak ada | 200 | `{"success":true,"message":"daftar mahasiswa berhasil diambil","data":[{"id":1,"nim":"082111633001","name":"Zagan Jade","grade":88,"is_active":true,"created_at":"2026-08-21T09:00:00Z"}],"meta":{"page":1,"limit":10,"total":1,"total_pages":1}}` |
-| GET | /students/:id | Path: `id` (angka positif) | tidak ada | 200, 400, 404 | `{"success":true,"message":"mahasiswa ditemukan","data":{"id":1,"nim":"082111633001","name":"Zagan Jade","grade":88,"is_active":true,"created_at":"2026-08-21T09:00:00Z"}}` |
-| POST | /students | Header: `Content-Type: application/json` | `{"nim":"082111633001","name":"Zagan Jade","grade":88}` | 201, 400, 409, 415, 422 | `{"success":true,"message":"mahasiswa berhasil ditambahkan","data":{"id":1,"nim":"082111633001","name":"Zagan Jade","grade":88,"is_active":true,"created_at":"2026-08-21T09:00:00Z"}}` disertai header `Location: /api/v1/students/1` |
-| PUT | /students/:id | Path: `id`. Header: `Content-Type: application/json`. Seluruh field wajib dikirim | `{"nim":"082111633009","name":"Zagan Baru","grade":75,"is_active":false}` | 200, 400, 404, 409, 415, 422 | `{"success":true,"message":"data mahasiswa berhasil diganti seluruhnya","data":{"id":1,"nim":"082111633009","name":"Zagan Baru","grade":75,"is_active":false,"created_at":"2026-08-21T09:00:00Z"}}` |
-| PATCH | /students/:id | Path: `id`. Header: `Content-Type: application/json`. Hanya field yang ingin diubah | `{"grade":91}` | 200, 400, 404, 409, 415, 422 | `{"success":true,"message":"data mahasiswa berhasil diperbarui sebagian","data":{"id":1,"nim":"082111633009","name":"Zagan Baru","grade":91,"is_active":false,"created_at":"2026-08-21T09:00:00Z"}}` |
+| GET | /students | Query: `page`, `limit`, `search`, `sort`, `order`, `is_active`, `min_grade`, `max_grade` | tidak ada | 200 | `{"success":true,"message":"daftar mahasiswa berhasil diambil","data":[{"id":1,"nim":"434241084","name":"Vito Aditya","grade":88,"is_active":true,"created_at":"2026-08-21T09:00:00Z"}],"meta":{"page":1,"limit":10,"total":1,"total_pages":1}}` |
+| GET | /students/:id | Path: `id` (angka positif) | tidak ada | 200, 400, 404 | `{"success":true,"message":"mahasiswa ditemukan","data":{"id":1,"nim":"434241084","name":"Vito Aditya","grade":88,"is_active":true,"created_at":"2026-08-21T09:00:00Z"}}` |
+| POST | /students | Header: `Content-Type: application/json` | `{"nim":"434241084","name":"Vito Aditya","grade":88}` | 201, 400, 409, 415, 422 | `{"success":true,"message":"mahasiswa berhasil ditambahkan","data":{"id":1,"nim":"434241084","name":"Vito Aditya","grade":88,"is_active":true,"created_at":"2026-08-21T09:00:00Z"}}` disertai header `Location: /api/v1/students/1` |
+| PUT | /students/:id | Path: `id`. Header: `Content-Type: application/json`. Seluruh field wajib dikirim | `{"nim":"434241084","name":"Vito Aditya Revisi","grade":75,"is_active":false}` | 200, 400, 404, 409, 415, 422 | `{"success":true,"message":"data mahasiswa berhasil diganti seluruhnya","data":{"id":1,"nim":"434241084","name":"Vito Aditya Revisi","grade":75,"is_active":false,"created_at":"2026-08-21T09:00:00Z"}}` |
+| PATCH | /students/:id | Path: `id`. Header: `Content-Type: application/json`. Hanya field yang ingin diubah | `{"grade":91}` | 200, 400, 404, 409, 415, 422 | `{"success":true,"message":"data mahasiswa berhasil diperbarui sebagian","data":{"id":1,"nim":"434241084","name":"Vito Aditya Revisi","grade":91,"is_active":false,"created_at":"2026-08-21T09:00:00Z"}}` |
 | DELETE | /students/:id | Path: `id` | tidak ada | 204, 400, 404 | tanpa body |
 | GET | /health | tidak ada | tidak ada | 200 | `{"success":true,"message":"server berjalan","data":{"timestamp":"2026-08-21T09:00:00Z"}}` |
 
@@ -105,7 +105,7 @@ Alasan batas atas limit dipilih 50: satu halaman daftar mahasiswa yang masih nya
 # 201 dan header Location
 curl -i -X POST localhost:3000/api/v1/students \
   -H "Content-Type: application/json" \
-  -d '{"nim":"082111633001","name":"Zagan Jade","grade":88}'
+  -d '{"nim":"434241084","name":"Vito Aditya","grade":88}'
 
 # 200 dengan paginasi, pencarian, dan penyaringan
 curl -i "localhost:3000/api/v1/students?page=1&limit=2&sort=grade&order=desc&is_active=true"
@@ -113,10 +113,10 @@ curl -i "localhost:3000/api/v1/students?page=1&limit=2&sort=grade&order=desc&is_
 # 409 karena NIM diulang
 curl -i -X POST localhost:3000/api/v1/students \
   -H "Content-Type: application/json" \
-  -d '{"nim":"082111633001","name":"Nama Lain","grade":70}'
+  -d '{"nim":"434241084","name":"Nama Lain","grade":70}'
 
 # 415 karena Content-Type tidak disertakan
-curl -i -X POST localhost:3000/api/v1/students -d '{"nim":"082111633009"}'
+curl -i -X POST localhost:3000/api/v1/students -d '{"nim":"434241084"}'
 
 # 422 karena PUT tidak mengirim seluruh field
 curl -i -X PUT localhost:3000/api/v1/students/1 \
