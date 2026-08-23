@@ -24,6 +24,11 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 - **Topik:** setup Go/Fiber, variabel & struktur data, pointer, struct + method.
 - **Kode:** [`modul-1/`](./modul-1/)
 
+### Modul 2 — REST API & HTTP Deep Dive
+
+- **Topik:** metode HTTP (safe/idempotent), PUT vs PATCH, status code, header, query string (filter, sort, search, paginasi).
+- **Tugas:** [`modul-2/api-students/`](./modul-2/api-students/) — REST API CRUD mahasiswa, lanjutan struct `Student` dari Modul 1.
+
 <!-- Modul berikutnya ditambahkan di sini -->
 
 ## Cara Menjalankan
