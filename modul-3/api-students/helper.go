@@ -2,9 +2,10 @@ package main
 
 import (
 	"api-students/app/model"
-
+	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -55,6 +56,10 @@ func failValidation(c *fiber.Ctx, errs map[string]string) error {
 	return c.Status(fiber.StatusUnprocessableEntity).JSON(model.WebResponse{
 		Success: false, Message: "validasi gagal", Errors: errs,
 	})
+}
+
+func reqCtx(c *fiber.Ctx) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(c.UserContext(), 5*time.Second)
 }
 
 func parseListQuery(c *fiber.Ctx) model.ListQuery {
