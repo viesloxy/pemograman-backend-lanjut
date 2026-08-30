@@ -1,0 +1,12 @@
+# binary hasil kompilasi
+api-students
+api-students.exe
+
+# berkas lokal
+.env
+*.log
+
+# folder editor
+.idea/
+.vscode/
+.DS_Store
