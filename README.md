@@ -34,6 +34,11 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 - **Topik:** PostgreSQL dengan pgx (connection pool, migrasi, query berparameter), pola repository dengan interface, penerjemahan error basis data menjadi status HTTP.
 - **Tugas:** [`modul-3/api-students/`](./modul-3/api-students/) — API mahasiswa Modul 2 dipindahkan dari memori ke PostgreSQL melalui repository pattern; perilaku HTTP tidak berubah.
 
+### Modul 4 — Clean Architecture
+
+- **Topik:** empat layer Clean Architecture dan Dependency Rule, pemisahan business rules murni + unit test, logger terstruktur (`log/slog` + rotasi berkas), middleware & route terpisah, graceful shutdown.
+- **Tugas:** [`modul-4/api-students/`](./modul-4/api-students/) — API mahasiswa Modul 3 direstrukturisasi ke struktur berlapis baku; perilaku HTTP tidak berubah.
+
 <!-- Modul berikutnya ditambahkan di sini -->
 
 ## Cara Menjalankan
@@ -46,7 +51,7 @@ go mod tidy
 go run main.go
 ```
 
-Proyek yang terdiri dari beberapa berkas/paket (modul 2 dan 3) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 membutuhkan PostgreSQL berjalan dan berkas `.env` — lihat README di dalam foldernya.
+Proyek yang terdiri dari beberapa berkas/paket (modul 2, 3, dan 4) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 dan 4 membutuhkan PostgreSQL berjalan dan berkas `.env` — lihat README di dalam masing-masing folder. Unit test modul 4: `go test ./app/service/ -v` dari folder proyeknya.
 
 ## Author
 
