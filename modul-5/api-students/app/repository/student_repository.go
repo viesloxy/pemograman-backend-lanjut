@@ -20,6 +20,7 @@ var (
 type StudentRepository interface {
 	FindAll(ctx context.Context, q model.ListQuery) ([]model.Student, int, error)
 	FindByID(ctx context.Context, id int) (model.Student, error)
+	FindByNIM(ctx context.Context, nim string) (model.Student, error)
 	Create(ctx context.Context, s model.Student) (model.Student, error)
 	Update(ctx context.Context, s model.Student) (model.Student, error)
 	Delete(ctx context.Context, id int) error
