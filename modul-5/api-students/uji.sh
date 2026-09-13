@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 BASE="http://localhost:3000/api/v1"
+J="Content-Type: application/json"
 
 judul() {
   echo ""
@@ -9,78 +10,93 @@ judul() {
   echo "=================================================="
 }
 
-judul "1. POST tiga mahasiswa, harapan 201 + header Location"
-curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"434241084","name":"Vito Aditya","grade":88}'
+judul "1. REGISTER tiga akun mahasiswa, harapan 201 + Location"
+curl -s -i -X POST $BASE/auth/register -H "$J" \
+  -d '{"nim":"434241084","name":"Vito Aditya","grade":88,"password":"rahasia123"}'
 echo ""
-curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"434241085","name":"Bagas Pratama","grade":64}'
+curl -s -i -X POST $BASE/auth/register -H "$J" \
+  -d '{"nim":"434241085","name":"Bagas Pratama","grade":64,"password":"rahasia456"}'
 echo ""
-curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"434241086","name":"Citra Ayu","grade":91}'
+curl -s -i -X POST $BASE/auth/register -H "$J" \
+  -d '{"nim":"434241086","name":"Citra Ayu","grade":91,"password":"rahasia789"}'
 
-judul "2. GET daftar dengan paginasi, harapan 200 + meta"
-curl -s -i "$BASE/students?page=1&limit=2"
+judul "2. REGISTER password lemah, harapan 422"
+curl -s -i -X POST $BASE/auth/register -H "$J" \
+  -d '{"nim":"434241087","name":"Dedi Kurnia","password":"password1"}'
 
-judul "3. GET daftar dengan pencarian dan pengurutan, harapan 200"
-curl -s -i "$BASE/students?search=a&sort=grade&order=desc"
+judul "3. REGISTER diselipkan role admin, harapan 201 dengan role tetap user"
+curl -s -i -X POST $BASE/auth/register -H "$J" \
+  -d '{"nim":"434241088","name":"Eka Putri","grade":90,"password":"rahasia888","role":"admin"}'
 
-judul "4. GET daftar dengan filter status dan rentang nilai, harapan 200"
-curl -s -i "$BASE/students?is_active=true&min_grade=70"
+judul "4. REGISTER NIM duplikat, harapan 409"
+curl -s -i -X POST $BASE/auth/register -H "$J" \
+  -d '{"nim":"434241084","name":"Peniru Identitas","grade":50,"password":"rahasia000"}'
 
-judul "5. GET satu mahasiswa, harapan 200"
-curl -s -i $BASE/students/1
+judul "5. GET students tanpa token, harapan 401 + WWW-Authenticate"
+curl -s -i $BASE/students
 
-judul "6. GET id yang tidak ada, harapan 404"
-curl -s -i $BASE/students/999
+judul "6. LOGIN password salah, harapan 401"
+curl -s -i -X POST $BASE/auth/login -H "$J" \
+  -d '{"nim":"434241084","password":"salahsekali9"}'
 
-judul "7. GET id bukan angka, harapan 400"
-curl -s -i $BASE/students/abc
+judul "7. LOGIN NIM tidak terdaftar, harapan 401 dengan pesan sama persis"
+curl -s -i -X POST $BASE/auth/login -H "$J" \
+  -d '{"nim":"999999999","password":"salahsekali9"}'
 
-judul "8. POST dengan NIM yang sudah dipakai, harapan 409"
-curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"434241084","name":"Nama Lain","grade":70}'
+judul "8. LOGIN benar, harapan 200 + access_token + refresh_token"
+RESP=$(curl -s -X POST $BASE/auth/login -H "$J" \
+  -d '{"nim":"434241084","password":"rahasia123"}')
+echo "$RESP"
+ACCESS=$(echo "$RESP" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+REFRESH=$(echo "$RESP" | grep -o '"refresh_token":"[^"]*"' | cut -d'"' -f4)
 
-judul "9. POST tanpa Content-Type, harapan 415"
-curl -s -i -X POST $BASE/students -d '{"nim":"434241084","name":"Tanpa Header","grade":70}'
+judul "9. GET students dengan token, harapan 200"
+curl -s -i $BASE/students -H "Authorization: Bearer $ACCESS"
 
-judul "10. POST dengan isi yang gagal validasi, harapan 422"
-curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"abc","name":"Ka","grade":150}'
+judul "10. GET /auth/me dengan token, harapan 200"
+curl -s -i $BASE/auth/me -H "Authorization: Bearer $ACCESS"
 
-judul "11. POST dengan JSON rusak, harapan 400"
-curl -s -i -X POST $BASE/students -H "Content-Type: application/json" \
-  -d '{"nim":"434241088",'
+judul "11. Token diubah satu huruf terakhir, harapan 401"
+curl -s -i $BASE/students -H "Authorization: Bearer ${ACCESS%?}X"
 
-judul "12. Data sebelum diubah, simpan tangkapan layar ini"
-curl -s -i $BASE/students/1
+judul "12. Token ber-alg none, harapan 401"
+PAYLOAD=$(echo "$ACCESS" | cut -d. -f2)
+curl -s -i $BASE/students -H "Authorization: Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.$PAYLOAD."
 
-judul "13. PUT mengganti seluruh isi, harapan 200"
-curl -s -i -X PUT $BASE/students/1 -H "Content-Type: application/json" \
-  -d '{"nim":"434241084","name":"Vito Aditya Revisi","grade":75,"is_active":false}'
+judul "13. REFRESH, harapan 200 dengan pasangan token baru"
+RESP2=$(curl -s -X POST $BASE/auth/refresh -H "$J" -d "{\"refresh_token\":\"$REFRESH\"}")
+echo "$RESP2"
+ACCESS2=$(echo "$RESP2" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+REFRESH2=$(echo "$RESP2" | grep -o '"refresh_token":"[^"]*"' | cut -d'"' -f4)
 
-judul "14. PUT tanpa mengirim seluruh field, harapan 422"
-curl -s -i -X PUT $BASE/students/1 -H "Content-Type: application/json" \
-  -d '{"name":"Kurang Lengkap"}'
+judul "14. Refresh token lama dipakai ulang, harapan 401 karena rotasi"
+curl -s -i -X POST $BASE/auth/refresh -H "$J" -d "{\"refresh_token\":\"$REFRESH\"}"
 
-judul "15. PATCH hanya satu field, harapan 200 dan field lain tetap"
-curl -s -i -X PATCH $BASE/students/1 -H "Content-Type: application/json" \
-  -d '{"grade":91}'
+judul "15. CRUD mahasiswa dengan token tetap berfungsi"
+RESP3=$(curl -s -X POST $BASE/students -H "$J" -H "Authorization: Bearer $ACCESS2" \
+  -d '{"nim":"434241099","name":"Mahasiswa Data","grade":70}')
+echo "$RESP3"
+ID=$(echo "$RESP3" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2)
+curl -s -o /dev/null -w "PUT    : %{http_code}\n" -X PUT $BASE/students/$ID -H "$J" \
+  -H "Authorization: Bearer $ACCESS2" \
+  -d '{"nim":"434241099","name":"Mahasiswa Data Revisi","grade":80,"is_active":true}'
+curl -s -o /dev/null -w "DELETE : %{http_code}\n" -X DELETE $BASE/students/$ID \
+  -H "Authorization: Bearer $ACCESS2"
 
-judul "16. PATCH tanpa satu pun field, harapan 400"
-curl -s -i -X PATCH $BASE/students/1 -H "Content-Type: application/json" -d '{}'
+judul "16. /auth/me tanpa token, harapan 401"
+curl -s -i $BASE/auth/me
 
-judul "17. DELETE, harapan 204 tanpa body"
-curl -s -i -X DELETE $BASE/students/2
+judul "17. BRUTE FORCE enam kali login gagal"
+echo "catatan: tiga login di skenario 6 sampai 8 ikut terhitung limiter,"
+echo "maka 429 dapat muncul sebelum percobaan keenam."
+for i in 1 2 3 4 5 6; do
+  curl -s -o /dev/null -w "percobaan $i: %{http_code}\n" -X POST $BASE/auth/login -H "$J" \
+    -d '{"nim":"434241084","password":"salahsekali9"}'
+done
 
-judul "18. DELETE ulang pada id yang sama, harapan 404"
-curl -s -i -X DELETE $BASE/students/2
-
-judul "19. limit melebihi batas dan sort di luar daftar putih, harapan 200 dengan nilai aman"
-curl -s -i "$BASE/students?limit=99999&sort=password"
-
-judul "20. Endpoint yang tidak terdaftar, harapan 404"
-curl -s -i $BASE/dosen
+judul "18. Health tetap publik, harapan 200"
+curl -s -i $BASE/health
 
 echo ""
-echo "Selesai."
+echo "Selesai. Untuk menjalankan ulang, tunggu satu menit (rate limiter)"
+echo "atau jalankan TRUNCATE students RESTART IDENTITY via psql."
