@@ -1,32 +1,33 @@
 # api-students
 
-REST API data mahasiswa dengan Go, Fiber v2, dan PostgreSQL, dilengkapi autentikasi JWT: register, login, refresh token dengan rotasi, logout, dan proteksi seluruh endpoint mahasiswa. Tugas Mandiri Modul 5 — Praktikum Pemrograman Backend Lanjut, D4 Teknik Informatika, Fakultas Vokasi, Universitas Airlangga.
+REST API data mahasiswa dengan Go, Fiber v2, dan PostgreSQL, dilengkapi autentikasi JWT dan otorisasi Role Based Access Control. Tugas Mandiri Modul 6 — Praktikum Pemrograman Backend Lanjut, D4 Teknik Informatika, Fakultas Vokasi, Universitas Airlangga.
 
-Modul ini melanjutkan Modul 4. Tidak ada perilaku CRUD yang berubah; yang baru: password disimpan sebagai hash bcrypt, endpoint `/auth/*` untuk pendaftaran akun dan login, serta middleware yang menuntut access token pada seluruh endpoint mahasiswa. Login memakai NIM dan password karena NIM sudah unik sejak Modul 3.
+Modul ini melanjutkan Modul 5. Autentikasi (login, JWT, refresh token) tetap berjalan; yang baru adalah lapisan otorisasi: hak akses disimpan di database dalam tiga tabel RBAC (roles, permissions, role_permissions), diperiksa middleware `RequirePermission` untuk keputusan yang tidak bergantung pada data, dan pemeriksaan kepemilikan di layer service untuk keputusan yang bergantung pada `owner_id`.
 
 ## Prasyarat
 
 - Go 1.26+
 - PostgreSQL 16 atau lebih baru
-- `psql` dan `openssl` (ikut terpasang bersama PostgreSQL dan Git Bash)
-- `curl` untuk pengujian
+- `psql`, `openssl`
+- Postman untuk pengujian (koleksi tersedia di `postman/`)
 
 ## Cara menjalankan dari nol
 
 ```bash
 git clone <url-repo-ini>
-cd modul-5/api-students
+cd modul-6/api-students
 
 # 1. Buat basis data kosong
 psql -U postgres -c "CREATE DATABASE praktikum_backend;"
 
-# 2. Jalankan dua migrasi (struktur tabel + kolom dan tabel autentikasi)
+# 2. Jalankan tiga migrasi berurutan
 psql -U postgres -d praktikum_backend -f migrations/001_create_students.sql
 psql -U postgres -d praktikum_backend -f migrations/002_auth.sql
+psql -U postgres -d praktikum_backend -f migrations/003_rbac.sql
 
-# 3. Salin contoh konfigurasi, isi kata sandi database dan JWT_SECRET
+# 3. Salin contoh konfigurasi, isi DB_PASSWORD dan JWT_SECRET
 cp .env.example .env
-# JWT_SECRET dibuat acak, minimal 32 karakter:
+# JWT_SECRET dibuat acak minimal 32 karakter:
 openssl rand -hex 32
 
 # 4. Ambil dependensi dan jalankan
@@ -34,13 +35,13 @@ go mod tidy
 go run .
 ```
 
-Server menolak menyala bila `JWT_SECRET` kosong atau pendek dari 32 karakter. Cek kesehatan:
+Server menolak menyala bila `JWT_SECRET` kosong atau pendek, atau bila koneksi database gagal. Cek kesehatan:
 
 ```bash
 curl -s -i http://localhost:3000/api/v1/health
 ```
 
-Unit test business rules berjalan tanpa server dan tanpa basis data: `go test ./app/service/ -v`.
+Unit test business rules dan otorisasi: `go test ./app/service/ -v`.
 
 ## Variabel environment
 
@@ -48,127 +49,120 @@ Unit test business rules berjalan tanpa server dan tanpa basis data: `go test ./
 |---|---|---|
 | APP_PORT | Port aplikasi | 3000 |
 | APP_NAME | Nama aplikasi | API Students |
-| LOG_LEVEL | Level log: debug, info, warn, error | info |
+| LOG_LEVEL | Level log | info |
 | DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME / DB_SSLMODE | Koneksi PostgreSQL | localhost / 5432 / postgres / (wajib) / praktikum_backend / disable |
 | DB_MAX_CONNS | Koneksi maksimum pool | 10 |
-| JWT_SECRET | Kunci tanda tangan token, minimal 32 karakter | (wajib, tanpa bawaan) |
+| JWT_SECRET | Kunci tanda tangan token, minimal 32 karakter | (wajib) |
 | JWT_ISSUER | Penerbit token | api-students |
 | JWT_ACCESS_TTL_MINUTES | Umur access token (menit) | 15 |
 | JWT_REFRESH_TTL_DAYS | Umur refresh token (hari) | 7 |
-| ALLOWED_ORIGINS | Origin yang boleh memanggil API, dipisah koma | http://localhost:5173 |
+| ALLOWED_ORIGINS | Origin yang diizinkan CORS | http://localhost:5173 |
 
 ## Skema tabel
 
-```sql
-ALTER TABLE students
-  ADD COLUMN IF NOT EXISTS password VARCHAR(255) NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user';
+Tiga tabel RBAC:
 
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id BIGSERIAL PRIMARY KEY,
-    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    token_hash TEXT NOT NULL UNIQUE,
-    expires_at TIMESTAMPTZ NOT NULL,
-    revoked_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+```sql
+roles            (name PK, description, created_at)
+permissions      (name PK, description)
+role_permissions (role_name FK, permission_name FK, PRIMARY KEY gabungan)
+
+students.role    → FOREIGN KEY ke roles(name) ON UPDATE CASCADE
+students.owner_id → FOREIGN KEY ke students(id), menandai pembuat data
 ```
 
-Password disimpan sebagai hash bcrypt cost 12 dengan salt bawaan bcrypt. Refresh token disimpan sebagai hash SHA-256; yang beredar di klien adalah nilai aslinya. Role disiapkan untuk pengaturan hak akses pada pertemuan berikutnya.
+Lima permission: `student:list`, `student:read:any`, `student:create`, `student:update:any`, `student:delete`.
+
+Pembagian per role:
+
+| Permission | admin | staff | user |
+|---|---|---|---|
+| student:list | ya | ya | tidak |
+| student:read:any | ya | ya | tidak |
+| student:create | ya | ya | tidak |
+| student:update:any | ya | tidak | tidak |
+| student:delete | ya | tidak | tidak |
 
 ## Struktur berkas
 
 ```text
 api-students/
 ├── app/
-│   ├── model/                  entitas, request-respons CRUD, dan model autentikasi
-│   ├── repository/             student_repository + token_repository
+│   ├── model/                  entitas, request-respons, AuthUser
+│   ├── repository/             student_repository, token_repository, role_repository
 │   └── service/
-│       ├── student_rules.go    aturan CRUD (murni, tanpa fiber)
-│       ├── auth_rules.go       aturan register dan login (murni, tanpa fiber)
-│       ├── auth_rules_test.go  unit test aturan
+│       ├── student_rules.go    aturan CRUD (murni)
+│       ├── student_authz_rules.go  aturan kepemilikan (murni)
+│       ├── auth_rules.go       aturan register dan login (murni)
 │       ├── student_service.go  CRUD mahasiswa (controller)
 │       └── auth_service.go     register, login, refresh, logout, me
 ├── config/                     app.go, env.go, logger.go
 ├── database/                   koneksi PostgreSQL
-├── helper/                     response.go, request.go, security.go, jwt.go, context.go
+├── helper/                     response, request, security, jwt, context, authz
 ├── logs/                       output log (tidak di-commit)
-├── middleware/                 middleware.go (global) dan auth.go (RequireAuth, limiter)
-├── route/                      pendaftaran alamat beserta pembagian publik dan terlindungi
-├── migrations/                 001_create_students.sql, 002_auth.sql
+├── middleware/                 middleware.go (global) dan authz.go (RequirePermission)
+├── route/                      peta endpoint beserta permission-nya
+├── migrations/                 001, 002, 003
+├── postman/                    koleksi Postman
 ├── .env / .env.example
-└── main.go                     perakitan, pemeriksaan secret, graceful shutdown
+└── main.go
 ```
 
-## Endpoint
+## Endpoint dan permission
 
 Basis URL: `http://localhost:3000/api/v1`
 
-| Metode | Endpoint | Auth | Keterangan |
-|---|---|---|---|
-| GET | /health | tidak perlu | memeriksa server dan database |
-| POST | /auth/register | tidak perlu | daftar akun mahasiswa, 201 |
-| POST | /auth/login | tidak perlu (rate limit 5 per menit per IP) | menghasilkan access token 15 menit dan refresh token 7 hari |
-| POST | /auth/refresh | bawa refresh token | rotasi: token lama dicabut, pasangan baru diterbitkan |
-| POST | /auth/logout | bawa refresh token | mencabut refresh token |
-| GET | /auth/me | Bearer access token | profil mahasiswa yang sedang login |
-| GET/POST | /students | Bearer access token | daftar (query lengkap) dan tambah |
-| GET/PUT/PATCH/DELETE | /students/:id | Bearer access token | ambil satu, ganti, ubah sebagian, hapus |
+| Metode | Endpoint | Auth | Permission | Keterangan |
+|---|---|---|---|---|
+| GET | /health | publik | | cek server dan database |
+| POST | /auth/register | publik | | daftar akun, role=user |
+| POST | /auth/login | publik (rate limit 5/menit/IP) | | hasil: access + refresh token |
+| POST | /auth/refresh | bawa refresh token | | rotasi token |
+| POST | /auth/logout | bawa refresh token | | cabut refresh token |
+| GET | /auth/me | Bearer token | | profil + daftar permission |
+| GET | /students | Bearer token | student:list | daftar dengan query lengkap |
+| POST | /students | Bearer token | student:create | tambah mahasiswa |
+| GET | /students/:id | Bearer token + kepemilikan | | admin/staff boleh semua, user hanya miliknya |
+| PUT | /students/:id | Bearer token + kepemilikan | | admin/staff boleh semua, user hanya miliknya |
+| PATCH | /students/:id | Bearer token + kepemilikan | | admin/staff boleh semua, user hanya miliknya |
+| DELETE | /students/:id | Bearer token | student:delete | admin saja |
 
-Contoh alur:
+Parameter query endpoint daftar: `page`, `limit`, `search`, `sort`, `order`, `is_active`, `min_grade`, `max_grade` (sama seperti Modul 3 dan 4).
 
-```bash
-B=http://localhost:3000/api/v1
-J="Content-Type: application/json"
+## Matriks hak akses
 
-# Daftar akun
-curl -s -i -X POST $B/auth/register -H "$J" \
-  -d '{"nim":"434241084","name":"Vito Aditya","grade":88,"password":"rahasia123"}'
-
-# Login, simpan access_token dan refresh_token dari respons
-curl -s -X POST $B/auth/login -H "$J" \
-  -d '{"nim":"434241084","password":"rahasia123"}'
-
-# Akses endpoint terlindungi
-curl -s $B/students -H "Authorization: Bearer <ACCESS_TOKEN>"
-```
-
-Parameter query pada endpoint daftar tetap sama seperti Modul 3 dan 4: `page`, `limit`, `search`, `sort`, `order`, `is_active`, `min_grade`, `max_grade`.
-
-## Perlindungan keamanan yang diterapkan
-
-| Perlindungan | Cara |
-|---|---|
-| Password | bcrypt cost 12 dengan salt bawaan; tidak pernah dikirim balik (`json:"-"`) |
-| NIM ganda | UNIQUE INDEX di basis data, register menjawab 409 |
-| Mass assignment | Role ditentukan server; struct request tidak memuat role |
-| User enumeration | Pesan login identik, ditambah hash palsu agar waktu tanggap mirip |
-| Algorithm confusion | keyfunc menolak algoritma selain HMAC |
-| Secret lemah | Aplikasi menolak menyala bila JWT_SECRET kurang dari 32 karakter |
-| Brute force | Rate limiter 5 percobaan login per menit per IP, jawab 429 + Retry-After |
-| Token curian | Access token 15 menit; refresh token dapat dicabut dan dirotasi |
-| Payload raksasa | BodyLimit 1 MB |
-| CORS longgar | Daftar origin diatur lewat ALLOWED_ORIGINS |
+| Aksi | admin | staff | user pemilik | user bukan pemilik |
+|---|---|---|---|---|
+| GET /students | 200 | 200 | 403 | 403 |
+| POST /students | 201 | 201 | 403 | 403 |
+| GET /students/:id milik sendiri | 200 | 200 | 200 | 403 |
+| GET /students/:id milik orang lain | 200 | 200 | 403 | 403 |
+| PUT milik sendiri | 200 | 200 | 200 | 403 |
+| PUT milik orang lain | 200 | 403 | 403 | 403 |
+| DELETE milik orang lain | 204 | 403 | 403 | 403 |
+| DELETE diri sendiri | 403 | 403 | 403 | 403 |
 
 ## Daftar status
 
 | Status | Situasi |
 |---|---|
 | 200 | Berhasil |
-| 201 | Register dan tambah mahasiswa berhasil, disertai Location |
+| 201 | Register dan tambah mahasiswa berhasil |
 | 204 | Hapus berhasil, tanpa body |
-| 400 | JSON rusak, id salah bentuk, PATCH kosong, refresh token kosong |
-| 401 | Belum membawa token, token tidak valid atau kedaluwarsa, kredensial salah, refresh token tidak aktif |
-| 403 | Akun dinonaktifkan |
+| 400 | JSON rusak, id salah, PATCH kosong |
+| 401 | Token tidak ada, tidak valid, atau kedaluwarsa |
+| 403 | Role tidak punya permission, bukan pemilik data, atau coba hapus diri sendiri |
 | 409 | NIM sudah terdaftar |
 | 415 | Content-Type bukan application/json |
 | 422 | Isi permintaan gagal validasi |
 | 429 | Melebihi lima percobaan login per menit |
 | 500 | Kesalahan tak terduga |
-| 503 | /health: database tidak dapat dihubungi |
+| 503 | Database tidak dapat dihubungi |
 
-## Catatan
+## Log
 
-- Percobaan register NIM duplikat membakar nomor id dari sequence (INSERT dialokasikan sebelum ditolak UNIQUE), sehingga id dapat melompat.
-- `JWT_SECRET` yang berganti membuat seluruh token lama seketika tidak sah; seluruh pemakai harus login ulang. Itu memang perilaku yang diinginkan ketika secret dicurigai bocor.
-- Endpoint yang belum tercakup: verifikasi email, lupa password, multi-factor, OAuth, dan penguncian akun.
+Setiap request tercatat satu baris JSON di layar dan `logs/app.log` (rotasi otomatis), memuat `request_id`, method, path, status, durasi, IP, dan identitas pemanggil bila sudah melewati RequireAuth.
+
+## Postman
+
+Koleksi `postman/api-students-modul-6.postman_collection.json` tinggal di-import: semua request sudah terkonfigurasi dan skrip Tests menyimpan token otomatis setiap login. Urutan pakai: folder Setup Akun, lalu promosi role lewat psql, lalu Login, lalu folder Students per role, lalu Refresh dan Negatif.
