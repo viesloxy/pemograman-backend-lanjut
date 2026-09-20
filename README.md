@@ -39,6 +39,16 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 - **Topik:** empat layer Clean Architecture dan Dependency Rule, pemisahan business rules murni + unit test, logger terstruktur (`log/slog` + rotasi berkas), middleware & route terpisah, graceful shutdown.
 - **Tugas:** [`modul-4/api-students/`](./modul-4/api-students/) — API mahasiswa Modul 3 direstrukturisasi ke struktur berlapis baku; perilaku HTTP tidak berubah.
 
+### Modul 5 — Authentication & Security
+
+- **Topik:** register dan login dengan bcrypt, JWT (access + refresh token dengan rotasi), middleware RequireAuth, rate limiter, user enumeration prevention.
+- **Tugas:** [`modul-5/api-students/`](./modul-5/api-students/) — API mahasiswa Modul 4 dilengkapi autentikasi JWT; seluruh endpoint students terkunci tanpa token.
+
+### Modul 6 — Authorization & RBAC
+
+- **Topik:** Role Based Access Control (tabel roles, permissions, role_permissions), middleware RequirePermission, pemeriksaan kepemilikan di service, fail closed, 401 vs 403.
+- **Tugas:** [`modul-6/api-students/`](./modul-6/api-students/) — API mahasiswa Modul 5 ditambah lapisan otorisasi RBAC; admin akses penuh, staff baca dan tambah, user hanya miliknya sendiri.
+
 <!-- Modul berikutnya ditambahkan di sini -->
 
 ## Cara Menjalankan
@@ -51,7 +61,7 @@ go mod tidy
 go run main.go
 ```
 
-Proyek yang terdiri dari beberapa berkas/paket (modul 2, 3, dan 4) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 dan 4 membutuhkan PostgreSQL berjalan dan berkas `.env` — lihat README di dalam masing-masing folder. Unit test modul 4: `go test ./app/service/ -v` dari folder proyeknya.
+Proyek yang terdiri dari beberapa berkas/paket (modul 2 sampai 6) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 sampai 6 membutuhkan PostgreSQL berjalan dan berkas `.env`. Proyek modul 5 dan 6 juga membutuhkan `JWT_SECRET` yang valid. Unit test: `go test ./app/service/ -v` dari folder proyeknya.
 
 ## Author
 
