@@ -85,7 +85,7 @@ func (s *StudentService) Create(c *fiber.Ctx) error {
 	req.NIM = strings.TrimSpace(req.NIM)
 	req.Name = strings.TrimSpace(req.Name)
 
-	if errs := ValidateCreate(req); len(errs) > 0 {
+	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
 	}
 
@@ -129,7 +129,7 @@ func (s *StudentService) Replace(c *fiber.Ctx) error {
 	req.NIM = strings.TrimSpace(req.NIM)
 	req.Name = strings.TrimSpace(req.Name)
 
-	if errs := ValidateReplace(req); len(errs) > 0 {
+	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
 	}
 
@@ -190,10 +190,7 @@ func (s *StudentService) Patch(c *fiber.Ctx) error {
 		return helper.Forbidden("tidak berhak mengubah data mahasiswa lain")
 	}
 
-	diubah, errs := ApplyPatch(saatIni, req)
-	if len(errs) > 0 {
-		return helper.Validation(errs)
-	}
+	diubah := ApplyPatch(saatIni, req)
 
 	hasil, err := s.repo.Update(ctx, diubah)
 	if err != nil {

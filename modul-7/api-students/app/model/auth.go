@@ -3,15 +3,15 @@ package model
 import "time"
 
 type RegisterRequest struct {
-	NIM      string   `json:"nim"`
-	Name     string   `json:"name"`
-	Grade    *float64 `json:"grade"`
-	Password string   `json:"password"`
+	NIM      string   `json:"nim" validate:"required,nim"`
+	Name     string   `json:"name" validate:"required,min=3,max=100"`
+	Grade    *float64 `json:"grade" validate:"omitnil,min=0,max=100"`
+	Password string   `json:"password" validate:"required,strongpassword"`
 }
 
 type LoginRequest struct {
-	NIM      string `json:"nim"`
-	Password string `json:"password"`
+	NIM      string `json:"nim" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type RefreshRequest struct {
