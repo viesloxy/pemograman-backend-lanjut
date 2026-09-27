@@ -58,7 +58,7 @@ func Conflict(message string) *AppError {
 
 func Validation(fields map[string]string) *AppError {
 	return &AppError{
-		Status: fiber.StatusBadRequest, Code: CodeValidation,
+		Status: fiber.StatusUnprocessableEntity, Code: CodeValidation,
 		Message: "validasi gagal", Fields: fields,
 	}
 }
@@ -84,9 +84,20 @@ func UnsupportedMediaType(message string) *AppError {
 	}
 }
 
+func ServiceUnavailable(message string) *AppError {
+	return &AppError{
+		Status: fiber.StatusServiceUnavailable, Code: CodeInternal,
+		Message: message,
+	}
+}
+
 func Internal(cause error) *AppError {
 	return &AppError{
 		Status: fiber.StatusInternalServerError, Code: CodeInternal,
 		Message: "terjadi kesalahan pada server", cause: cause,
 	}
+}
+
+func NewAppError(status int, code, message string) *AppError {
+	return &AppError{Status: status, Code: code, Message: message}
 }

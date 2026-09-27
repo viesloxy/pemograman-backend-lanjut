@@ -10,11 +10,11 @@ func RequirePermission(perms *helper.PermissionSet, permission string) fiber.Han
 	return func(c *fiber.Ctx) error {
 		user, ok := helper.CurrentUser(c)
 		if !ok {
-			return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
+			return helper.Unauthorized("belum terautentikasi")
 		}
 		if !perms.Can(user.Role, permission) {
-			return helper.Fail(c, fiber.StatusForbidden,
-				"role "+user.Role+" tidak memiliki hak "+permission)
+			return helper.Forbidden(
+				"role " + user.Role + " tidak memiliki hak " + permission)
 		}
 		return c.Next()
 	}
@@ -29,10 +29,10 @@ func RequireRole(roles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user, ok := helper.CurrentUser(c)
 		if !ok {
-			return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
+			return helper.Unauthorized("belum terautentikasi")
 		}
 		if _, granted := allowed[user.Role]; !granted {
-			return helper.Fail(c, fiber.StatusForbidden,
+			return helper.Forbidden(
 				"role Anda tidak berhak mengakses endpoint ini")
 		}
 		return c.Next()

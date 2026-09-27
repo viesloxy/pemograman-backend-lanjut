@@ -13,3 +13,4 @@ logs/
 .idea/
 .vscode/
 .DS_Store
+# berkas sisa build\*.exe~

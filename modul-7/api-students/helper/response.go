@@ -28,15 +28,3 @@ func Created(c *fiber.Ctx, message string, data any, location string) error {
 func NoContent(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
-
-func Fail(c *fiber.Ctx, status int, message string) error {
-	return c.Status(status).JSON(model.WebResponse{
-		Success: false, Message: message,
-	})
-}
-
-func FailValidation(c *fiber.Ctx, errs map[string]string) error {
-	return c.Status(fiber.StatusUnprocessableEntity).JSON(model.WebResponse{
-		Success: false, Message: "validasi gagal", Errors: errs,
-	})
-}
