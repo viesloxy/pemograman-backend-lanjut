@@ -1,0 +1,802 @@
+{
+	"info": {
+		"name": "api-students Modul 6",
+		"description": "Koleksi pengujian RBAC untuk tugas Modul 6. Urutan pakai: folder Setup Akun, lalu promosi role lewat psql (lihat deskripsi folder), lalu Login per role, lalu folder Students per role, lalu Refresh dan Negatif.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+		{ "key": "accessToken", "value": "" },
+		{ "key": "refreshToken", "value": "" },
+		{ "key": "refreshTokenBaru", "value": "" },
+		{ "key": "adminToken", "value": "" },
+		{ "key": "staffToken", "value": "" },
+		{ "key": "userToken", "value": "" },
+		{ "key": "vitoId", "value": "" },
+		{ "key": "budiId", "value": "" },
+		{ "key": "citraId", "value": "" },
+		{ "key": "createdId", "value": "" }
+	],
+	"item": [
+		{
+			"name": "1 Setup Akun (publik)",
+			"item": [
+				{
+					"name": "Register Vito (nanti admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('vitoId', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"name\":\"Vito Aditya\",\"grade\":88,\"password\":\"rahasia123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Register Budi (nanti staff)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('budiId', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241085\",\"name\":\"Budi Pratama\",\"grade\":64,\"password\":\"rahasia456\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Register Citra (role user)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('citraId', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241086\",\"name\":\"Citra Ayu\",\"grade\":91,\"password\":\"rahasia789\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Register password lemah (422)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241087\",\"name\":\"Dedi Kurnia\",\"password\":\"password1\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Register diselipkan role admin (201, role tetap user)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241088\",\"name\":\"Eka Putri\",\"grade\":90,\"password\":\"rahasia888\",\"role\":\"admin\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2 Promosi Role (jalankan psql, bukan Postman)",
+			"description": "Jalankan di terminal:\n\npsql -U postgres -d praktikum_backend -c \"UPDATE students SET role='admin' WHERE nim='434241084'; UPDATE students SET role='staff' WHERE nim='434241085';\"\n\nLalu WAJIB login ulang Vito dan Budi di folder berikutnya, karena role di dalam token lama hanya berubah setelah login ulang.",
+			"item": []
+		},
+		{
+			"name": "3 Login (token tersimpan otomatis)",
+			"item": [
+				{
+					"name": "Login Vito (admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', body.data.access_token);",
+									"    pm.collectionVariables.set('refreshToken', body.data.refresh_token);",
+									"    pm.collectionVariables.set('adminToken', body.data.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"password\":\"rahasia123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Login Budi (staff)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', body.data.access_token);",
+									"    pm.collectionVariables.set('refreshToken', body.data.refresh_token);",
+									"    pm.collectionVariables.set('staffToken', body.data.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241085\",\"password\":\"rahasia456\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Login Citra (user)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', body.data.access_token);",
+									"    pm.collectionVariables.set('refreshToken', body.data.refresh_token);",
+									"    pm.collectionVariables.set('userToken', body.data.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241086\",\"password\":\"rahasia789\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Login password salah (401)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"password\":\"salahsekali9\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Login NIM tidak terdaftar (401, pesan sama persis)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"999999999\",\"password\":\"salahsekali9\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4 Students sebagai Admin",
+			"item": [
+				{
+					"name": "GET /students (200)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						}
+					}
+				},
+				{
+					"name": "POST /students (201, owner otomatis pemanggil)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('createdId', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241099\",\"name\":\"Mahasiswa Data\",\"grade\":70}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "GET /students/{{createdId}} (200)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{createdId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{createdId}}"]
+						}
+					}
+				},
+				{
+					"name": "PUT /students/{{createdId}} (200)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{createdId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{createdId}}"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241099\",\"name\":\"Mahasiswa Data Revisi\",\"grade\":80,\"is_active\":true}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "DELETE /students/{{createdId}} (204)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{createdId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{createdId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5 Students sebagai Staff",
+			"item": [
+				{
+					"name": "GET /students (200)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{staffToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						}
+					}
+				},
+				{
+					"name": "POST /students (201)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{staffToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241098\",\"name\":\"Data Staff\",\"grade\":70}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "PUT /students/{{vitoId}} milik orang lain (403)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{staffToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{vitoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{vitoId}}"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241099\",\"name\":\"Dicuri Staff\",\"grade\":10,\"is_active\":false}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "DELETE /students/{{vitoId}} (403)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{staffToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{vitoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{vitoId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6 Students sebagai User (Citra)",
+			"item": [
+				{
+					"name": "GET /students (403)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{userToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						}
+					}
+				},
+				{
+					"name": "POST /students (403)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{userToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241097\",\"name\":\"Data User\",\"grade\":70}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "GET /students/{{citraId}} milik sendiri (200)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{userToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{citraId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{citraId}}"]
+						}
+					}
+				},
+				{
+					"name": "GET /students/{{vitoId}} milik orang lain (403)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{userToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{vitoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{vitoId}}"]
+						}
+					}
+				},
+				{
+					"name": "PUT /students/{{citraId}} milik sendiri (200)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{userToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{citraId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{citraId}}"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241086\",\"name\":\"Citra Ayu\",\"grade\":95,\"is_active\":true}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "PUT /students/{{vitoId}} milik orang lain (403)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{userToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{vitoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{vitoId}}"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"name\":\"Diretas Citra\",\"grade\":10,\"is_active\":false}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "DELETE /students/{{citraId}} (403, user tak punya student:delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{userToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/{{citraId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "{{citraId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7 Refresh dan Logout",
+			"item": [
+				{
+					"name": "Refresh (200, token dirotasi)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', body.data.access_token);",
+									"    pm.collectionVariables.set('refreshTokenBaru', body.data.refresh_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "refresh"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"refresh_token\":\"{{refreshToken}}\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Refresh pakai token lama (401, bukti rotasi)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "refresh"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"refresh_token\":\"{{refreshToken}}\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Logout (200)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "logout"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"refresh_token\":\"{{refreshTokenBaru}}\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "8 Pengujian Negatif",
+			"item": [
+				{
+					"name": "POST /students diselipkan owner_id (201, owner tetap pemanggil)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241090\",\"name\":\"Uji Owner\",\"grade\":80,\"owner_id\":999}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Token diubah satu huruf (401)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const token = pm.collectionVariables.get('accessToken');",
+									"if (token) {",
+									"    pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token.slice(0, -1) + 'X' });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						}
+					}
+				},
+				{
+					"name": "Token ber-alg none (401)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const token = pm.collectionVariables.get('accessToken');",
+									"if (token) {",
+									"    const payload = token.split('.')[1];",
+									"    pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.' + payload + '.' });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						}
+					}
+				},
+				{
+					"name": "GET /auth/me tanpa token (401)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "9 Lainnya",
+			"item": [
+				{
+					"name": "GET /health (200)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "GET /auth/me dengan token (200)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
