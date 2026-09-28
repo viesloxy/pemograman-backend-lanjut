@@ -12,7 +12,7 @@ func Success(c *fiber.Ctx, status int, message string, data any) error {
 	})
 }
 
-func SuccessList(c *fiber.Ctx, message string, data any, meta *model.Meta) error {
+func SuccessList(c *fiber.Ctx, message string, data any, meta any) error {
 	return c.Status(fiber.StatusOK).JSON(model.WebResponse{
 		Success: true, Message: message, Data: data, Meta: meta,
 	})

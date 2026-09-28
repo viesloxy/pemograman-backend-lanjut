@@ -19,6 +19,7 @@ var (
 
 type StudentRepository interface {
 	FindAll(ctx context.Context, q model.ListQuery) ([]model.Student, int, error)
+	FindAfterCursor(ctx context.Context, q model.CursorQuery) ([]model.Student, error)
 	FindByID(ctx context.Context, id int) (model.Student, error)
 	FindByNIM(ctx context.Context, nim string) (model.Student, error)
 	Create(ctx context.Context, s model.Student) (model.Student, error)
@@ -217,4 +218,61 @@ func isUniqueViolation(err error) bool {
 		return pgErr.Code == "23505"
 	}
 	return false
+}
+
+func (r *studentPostgresRepository) FindAfterCursor(
+	ctx context.Context, q model.CursorQuery,
+) ([]model.Student, error) {
+	args := []any{}
+	where := " WHERE 1 = 1"
+
+	if q.Search != "" {
+		args = append(args, "%"+q.Search+"%")
+		where += fmt.Sprintf(" AND name ILIKE $%d", len(args))
+	}
+	if q.IsActive != nil {
+		args = append(args, *q.IsActive)
+		where += fmt.Sprintf(" AND is_active = $%d", len(args))
+	}
+	if q.MinGrade != nil {
+		args = append(args, *q.MinGrade)
+		where += fmt.Sprintf(" AND grade >= $%d", len(args))
+	}
+	if q.MaxGrade != nil {
+		args = append(args, *q.MaxGrade)
+		where += fmt.Sprintf(" AND grade <= $%d", len(args))
+	}
+	if q.Cursor != nil {
+		args = append(args, q.Cursor.CreatedAt, q.Cursor.ID)
+		where += fmt.Sprintf(
+			" AND (created_at, id) < ($%d, $%d)", len(args)-1, len(args))
+	}
+
+	args = append(args, q.Limit)
+	query := fmt.Sprintf(
+		`SELECT id, nim, name, grade, password, role, owner_id, is_active, created_at
+		 FROM students%s
+		 ORDER BY created_at DESC, id DESC
+		 LIMIT $%d`, where, len(args))
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil daftar mahasiswa: %w", err)
+	}
+	defer rows.Close()
+
+	result := []model.Student{}
+	for rows.Next() {
+		var s model.Student
+		if err := rows.Scan(&s.ID, &s.NIM, &s.Name, &s.Grade,
+			&s.Password, &s.Role, &s.OwnerID, &s.IsActive, &s.CreatedAt); err != nil {
+			return nil, fmt.Errorf("membaca row mahasiswa: %w", err)
+		}
+		result = append(result, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("membaca hasil query: %w", err)
+	}
+
+	return result, nil
 }
