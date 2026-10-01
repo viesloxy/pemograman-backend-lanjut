@@ -1,29 +1,31 @@
 # api-students
 
-REST API data mahasiswa dengan Go, Fiber v2, dan PostgreSQL, dilengkapi autentikasi JWT dan otorisasi Role Based Access Control. Tugas Mandiri Modul 6 — Praktikum Pemrograman Backend Lanjut, D4 Teknik Informatika, Fakultas Vokasi, Universitas Airlangga.
+REST API data mahasiswa dengan Go, Fiber v2, dan PostgreSQL, dilengkapi autentikasi JWT, otorisasi RBAC, validasi deklaratif, cursor pagination, dan content negotiation. Tugas Mandiri Modul 7 — Praktikum Pemrograman Backend Lanjut, D4 Teknik Informatika, Fakultas Vokasi, Universitas Airlangga.
 
-Modul ini melanjutkan Modul 5. Autentikasi (login, JWT, refresh token) tetap berjalan; yang baru adalah lapisan otorisasi: hak akses disimpan di database dalam tiga tabel RBAC (roles, permissions, role_permissions), diperiksa middleware `RequirePermission` untuk keputusan yang tidak bergantung pada data, dan pemeriksaan kepemilikan di layer service untuk keputusan yang bergantung pada `owner_id`.
+Modul ini memperbaiki empat kelemahan dari Modul 6: validasi manual diganti tag deklaratif (go-playground/validator), response kegagalan dipusatkan pada satu ErrorHandler dengan kode error yang stabil, pagination offset diganti keyset pagination dengan cursor, dan API mampu melayani JSON dan CSV melalui content negotiation.
 
 ## Prasyarat
 
 - Go 1.26+
-- PostgreSQL 16 atau lebih baru
+- PostgreSQL 16+
 - `psql`, `openssl`
-- Postman untuk pengujian (koleksi tersedia di `postman/`)
+- Postman untuk pengujian
 
 ## Cara menjalankan dari nol
 
 ```bash
 git clone <url-repo-ini>
-cd modul-6/api-students
+cd modul-7/api-students
 
 # 1. Buat basis data kosong
 psql -U postgres -c "CREATE DATABASE praktikum_backend;"
 
-# 2. Jalankan tiga migrasi berurutan
+# 2. Jalankan lima migrasi berurutan
 psql -U postgres -d praktikum_backend -f migrations/001_create_students.sql
 psql -U postgres -d praktikum_backend -f migrations/002_auth.sql
 psql -U postgres -d praktikum_backend -f migrations/003_rbac.sql
+psql -U postgres -d praktikum_backend -f migrations/004_student_permissions.sql
+psql -U postgres -d praktikum_backend -f migrations/005_cursor_index.sql
 
 # 3. Salin contoh konfigurasi, isi DB_PASSWORD dan JWT_SECRET
 cp .env.example .env
@@ -35,13 +37,7 @@ go mod tidy
 go run .
 ```
 
-Server menolak menyala bila `JWT_SECRET` kosong atau pendek, atau bila koneksi database gagal. Cek kesehatan:
-
-```bash
-curl -s -i http://localhost:3000/api/v1/health
-```
-
-Unit test business rules dan otorisasi: `go test ./app/service/ -v`.
+Unit test: `go test ./app/service/ ./helper/ -v`
 
 ## Variabel environment
 
@@ -50,119 +46,89 @@ Unit test business rules dan otorisasi: `go test ./app/service/ -v`.
 | APP_PORT | Port aplikasi | 3000 |
 | APP_NAME | Nama aplikasi | API Students |
 | LOG_LEVEL | Level log | info |
-| DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME / DB_SSLMODE | Koneksi PostgreSQL | localhost / 5432 / postgres / (wajib) / praktikum_backend / disable |
-| DB_MAX_CONNS | Koneksi maksimum pool | 10 |
-| JWT_SECRET | Kunci tanda tangan token, minimal 32 karakter | (wajib) |
+| DB_HOST/PORT/USER/PASSWORD/NAME/SSLMODE/MAX_CONNS | Koneksi PostgreSQL | |
+| JWT_SECRET | Kunci token, min 32 karakter | (wajib) |
 | JWT_ISSUER | Penerbit token | api-students |
-| JWT_ACCESS_TTL_MINUTES | Umur access token (menit) | 15 |
-| JWT_REFRESH_TTL_DAYS | Umur refresh token (hari) | 7 |
-| ALLOWED_ORIGINS | Origin yang diizinkan CORS | http://localhost:5173 |
-
-## Skema tabel
-
-Tiga tabel RBAC:
-
-```sql
-roles            (name PK, description, created_at)
-permissions      (name PK, description)
-role_permissions (role_name FK, permission_name FK, PRIMARY KEY gabungan)
-
-students.role    → FOREIGN KEY ke roles(name) ON UPDATE CASCADE
-students.owner_id → FOREIGN KEY ke students(id), menandai pembuat data
-```
-
-Lima permission: `student:list`, `student:read:any`, `student:create`, `student:update:any`, `student:delete`.
-
-Pembagian per role:
-
-| Permission | admin | staff | user |
-|---|---|---|---|
-| student:list | ya | ya | tidak |
-| student:read:any | ya | ya | tidak |
-| student:create | ya | ya | tidak |
-| student:update:any | ya | tidak | tidak |
-| student:delete | ya | tidak | tidak |
+| JWT_ACCESS_TTL_MINUTES | Umur access token | 15 |
+| JWT_REFRESH_TTL_DAYS | Umur refresh token | 7 |
+| ALLOWED_ORIGINS | Origin CORS | http://localhost:5173 |
 
 ## Struktur berkas
 
 ```text
 api-students/
 ├── app/
-│   ├── model/                  entitas, request-respons, AuthUser
+│   ├── model/                  entitas + request (tag validate) + ErrorResponse + CursorMeta
 │   ├── repository/             student_repository, token_repository, role_repository
 │   └── service/
-│       ├── student_rules.go    aturan CRUD (murni)
-│       ├── student_authz_rules.go  aturan kepemilikan (murni)
-│       ├── auth_rules.go       aturan register dan login (murni)
-│       ├── student_service.go  CRUD mahasiswa (controller)
+│       ├── student_rules.go    ApplyPatch, IsEmptyPatch, CountTotalPages
+│       ├── auth_rules_test.go  unit test validasi deklaratif
+│       ├── student_authz_rules.go  CanAccessStudent + ownerValue
+│       ├── student_service.go  CRUD (balik error, bukan response)
 │       └── auth_service.go     register, login, refresh, logout, me
 ├── config/                     app.go, env.go, logger.go
 ├── database/                   koneksi PostgreSQL
-├── helper/                     response, request, security, jwt, context, authz
-├── logs/                       output log (tidak di-commit)
-├── middleware/                 middleware.go (global) dan authz.go (RequirePermission)
-├── route/                      peta endpoint beserta permission-nya
-├── migrations/                 001, 002, 003
+├── helper/                     response, request, security, jwt, context, authz,
+│                               errors (AppError), validator, cursor, negotiate
+├── middleware/                 middleware.go (global) + auth.go + authz.go
+├── route/                      pendaftaran route + Dependencies
+├── migrations/                 001-005
 ├── postman/                    koleksi Postman
+├── logs/                       (tidak di-commit)
 ├── .env / .env.example
 └── main.go
 ```
 
-## Endpoint dan permission
+## Endpoint
 
 Basis URL: `http://localhost:3000/api/v1`
 
-| Metode | Endpoint | Auth | Permission | Keterangan |
-|---|---|---|---|---|
-| GET | /health | publik | | cek server dan database |
-| POST | /auth/register | publik | | daftar akun, role=user |
-| POST | /auth/login | publik (rate limit 5/menit/IP) | | hasil: access + refresh token |
-| POST | /auth/refresh | bawa refresh token | | rotasi token |
-| POST | /auth/logout | bawa refresh token | | cabut refresh token |
-| GET | /auth/me | Bearer token | | profil + daftar permission |
-| GET | /students | Bearer token | student:list | daftar dengan query lengkap |
-| POST | /students | Bearer token | student:create | tambah mahasiswa |
-| GET | /students/:id | Bearer token + kepemilikan | | admin/staff boleh semua, user hanya miliknya |
-| PUT | /students/:id | Bearer token + kepemilikan | | admin/staff boleh semua, user hanya miliknya |
-| PATCH | /students/:id | Bearer token + kepemilikan | | admin/staff boleh semua, user hanya miliknya |
-| DELETE | /students/:id | Bearer token | student:delete | admin saja |
+| Metode | Endpoint | Auth | Permission |
+|---|---|---|---|
+| GET | /health | publik | |
+| POST | /auth/register | publik | |
+| POST | /auth/login | publik (rate limit) | |
+| POST | /auth/refresh | refresh token | |
+| POST | /auth/logout | refresh token | |
+| GET | /auth/me | Bearer token | |
+| GET | /students | Bearer + student:list | cursor pagination |
+| POST | /students | Bearer + student:create | validasi deklaratif |
+| GET | /students/:id | Bearer + pemilik atau student:read:any | |
+| PUT | /students/:id | Bearer + pemilik atau student:update:any | |
+| PATCH | /students/:id | Bearer + pemilik atau student:update:any | |
+| DELETE | /students/:id | Bearer + student:delete | |
 
-Parameter query endpoint daftar: `page`, `limit`, `search`, `sort`, `order`, `is_active`, `min_grade`, `max_grade` (sama seperti Modul 3 dan 4).
+### Content negotiation
+
+Header `Accept: text/csv` pada GET /students menghasilkan berkas CSV. Tanpa header Accept atau dengan `*/*` menghasilkan JSON. Format lain menjawab 406.
+
+### Cursor pagination
+
+GET /students mendukung `?limit=N&cursor=XXX`. Respons memuat `next_cursor` dan `has_more` alih-alih `page` dan `total_pages`. Cursor menambatkan posisi pada `created_at` + `id` sehingga tidak ada duplikat atau baris yang terlewat bila data berubah di antara dua halaman.
 
 ## Matriks hak akses
 
-| Aksi | admin | staff | user pemilik | user bukan pemilik |
-|---|---|---|---|---|
-| GET /students | 200 | 200 | 403 | 403 |
-| POST /students | 201 | 201 | 403 | 403 |
-| GET /students/:id milik sendiri | 200 | 200 | 200 | 403 |
-| GET /students/:id milik orang lain | 200 | 200 | 403 | 403 |
-| PUT milik sendiri | 200 | 200 | 200 | 403 |
-| PUT milik orang lain | 200 | 403 | 403 | 403 |
-| DELETE milik orang lain | 204 | 403 | 403 | 403 |
-| DELETE diri sendiri | 403 | 403 | 403 | 403 |
+Lihat Modul 6 — tidak berubah.
 
 ## Daftar status
 
-| Status | Situasi |
-|---|---|
-| 200 | Berhasil |
-| 201 | Register dan tambah mahasiswa berhasil |
-| 204 | Hapus berhasil, tanpa body |
-| 400 | JSON rusak, id salah, PATCH kosong |
-| 401 | Token tidak ada, tidak valid, atau kedaluwarsa |
-| 403 | Role tidak punya permission, bukan pemilik data, atau coba hapus diri sendiri |
-| 409 | NIM sudah terdaftar |
-| 415 | Content-Type bukan application/json |
-| 422 | Isi permintaan gagal validasi |
-| 429 | Melebihi lima percobaan login per menit |
-| 500 | Kesalahan tak terduga |
-| 503 | Database tidak dapat dihubungi |
+| Status | Code | Situasi |
+|---|---|---|
+| 200 | | Berhasil |
+| 201 | | Register dan tambah berhasil |
+| 204 | | Hapus berhasil |
+| 400 | BAD_REQUEST | JSON rusak, id salah, cursor tidak valid |
+| 401 | UNAUTHORIZED | Token tidak ada, tidak valid, kedaluwarsa |
+| 403 | FORBIDDEN | Role tidak punya permission, bukan pemilik data |
+| 404 | NOT_FOUND | Data atau endpoint tidak ditemukan |
+| 406 | NOT_ACCEPTABLE | Format Accept tidak tersedia |
+| 409 | CONFLICT | NIM sudah terdaftar |
+| 415 | UNSUPPORTED_MEDIA_TYPE | Content-Type bukan application/json |
+| 422 | VALIDATION_ERROR | Tag validate dilanggar |
+| 429 | TOO_MANY_REQUESTS | Login melebihi lima kali per menit |
+| 500 | INTERNAL_ERROR | Kesalahan tak terduga (detail hanya di log) |
+| 503 | | Database tidak dapat dihubungi |
 
 ## Log
 
-Setiap request tercatat satu baris JSON di layar dan `logs/app.log` (rotasi otomatis), memuat `request_id`, method, path, status, durasi, IP, dan identitas pemanggil bila sudah melewati RequireAuth.
-
-## Postman
-
-Koleksi `postman/api-students-modul-6.postman_collection.json` tinggal di-import: semua request sudah terkonfigurasi dan skrip Tests menyimpan token otomatis setiap login. Urutan pakai: folder Setup Akun, lalu promosi role lewat psql, lalu Login, lalu folder Students per role, lalu Refresh dan Negatif.
+Setiap request tercatat satu baris JSON. Request yang gagal menghasilkan dua baris: `http_request` (dengan identitas bila ada) dan `request_rejected` atau `request_failed` (dengan kode error). Identitas `user_id`, `nim`, dan `role` dicatat untuk request yang membawa token.

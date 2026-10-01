@@ -1,0 +1,386 @@
+{
+	"info": {
+		"name": "api-students Modul 7",
+		"description": "Pengujian Advanced API Design: cursor pagination, content negotiation, validasi deklaratif, error handling terpusat.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+		{ "key": "accessToken", "value": "" },
+		{ "key": "nextCursor", "value": "" }
+	],
+	"item": [
+		{
+			"name": "1 Autentikasi",
+			"item": [
+				{
+					"name": "Register (valid)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('studentId', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"name\":\"Vito Aditya\",\"grade\":88,\"password\":\"rahasia123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Register NIM salah format (422)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"abc\",\"name\":\"Budi\",\"password\":\"rahasia123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Login (simpan token otomatis)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', body.data.access_token);",
+									"    pm.collectionVariables.set('refreshToken', body.data.refresh_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"password\":\"rahasia123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2 Cursor Pagination",
+			"item": [
+				{
+					"name": "Halaman 1 (limit 3)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    if (body.data && body.data.meta && body.data.meta.next_cursor) {",
+									"        pm.collectionVariables.set('nextCursor', body.data.meta.next_cursor);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students?limit=3",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"],
+							"query": [
+								{ "key": "limit", "value": "3" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Halaman 2 (pakai cursor)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students?limit=3&cursor={{nextCursor}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"],
+							"query": [
+								{ "key": "limit", "value": "3" },
+								{ "key": "cursor", "value": "{{nextCursor}}" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Halaman terakhir (has_more false)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students?limit=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"],
+							"query": [
+								{ "key": "limit", "value": "50" }
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3 Content Negotiation",
+			"item": [
+				{
+					"name": "Accept text/csv (CSV export)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" },
+							{ "key": "Accept", "value": "text/csv" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students?limit=3",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"],
+							"query": [
+								{ "key": "limit", "value": "3" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Accept application/xml (406)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" },
+							{ "key": "Accept", "value": "application/xml" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students?limit=3",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"],
+							"query": [
+								{ "key": "limit", "value": "3" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Accept */* (200 JSON bawaan)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" },
+							{ "key": "Accept", "value": "*/*" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students?limit=3",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"],
+							"query": [
+								{ "key": "limit", "value": "3" }
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4 Validasi Deklaratif (422)",
+			"item": [
+				{
+					"name": "Register NIM salah + nama pendek + password lemah",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"abc\",\"name\":\"Ka\",\"password\":\"abc\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Register password umum (422)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241090\",\"name\":\"Coba Umum\",\"password\":\"password123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5 Error Format Konsisten",
+			"item": [
+				{
+					"name": "404 NOT_FOUND",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/99999",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "99999"]
+						}
+					}
+				},
+				{
+					"name": "401 UNAUTHORIZED (tanpa token)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						}
+					}
+				},
+				{
+					"name": "403 FORBIDDEN (token user, akses endpoint admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "1"]
+						}
+					}
+				},
+				{
+					"name": "400 BAD_REQUEST (cursor rusak)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students?cursor=bukan-base64!!",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"],
+							"query": [
+								{ "key": "cursor", "value": "bukan-base64!!" }
+							]
+						}
+					}
+				},
+				{
+					"name": "415 UNSUPPORTED_MEDIA_TYPE",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "text/plain" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "ini bukan JSON"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6 Lainnya",
+			"item": [
+				{
+					"name": "GET /health (200)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "GET /auth/me dengan token (200)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
