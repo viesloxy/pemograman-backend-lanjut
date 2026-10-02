@@ -61,9 +61,12 @@ func SIAKADPermissions() *PermissionSet {
 			"student:update:any",
 			"student:delete",
 		},
-		// Mahasiswa tidak memegang permission apa pun; ia tetap dapat
-		// melihat profil dan KRS miliknya sendiri lewat pemeriksaan
-		// kepemilikan di service.
-		"mahasiswa": {},
+		// Mahasiswa tidak memegang permission data mahasiswa; haknya atas
+		// KRS sendiri berupa permission khusus berikut. Pemeriksaan
+		// kepemilikan per baris tetap berada di layer service.
+		"mahasiswa": {
+			"enrollment:create",
+			"enrollment:delete",
+		},
 	})
 }

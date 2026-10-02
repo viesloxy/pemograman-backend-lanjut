@@ -54,6 +54,7 @@ func main() {
 	authService := service.NewAuthService(userRepository, studentRepository, jwtManager)
 	studentService := service.NewStudentService(studentRepository, userRepository, enrollmentRepository, pool)
 	courseService := service.NewCourseService(courseRepository)
+	enrollmentService := service.NewEnrollmentService(enrollmentRepository, studentRepository, courseRepository, pool)
 
 	app := config.NewApp(logger, route.Dependencies{
 		Pool:        pool,
@@ -62,6 +63,7 @@ func main() {
 		Auth:        authService,
 		Students:    studentService,
 		Courses:     courseService,
+		Enrollments: enrollmentService,
 	})
 	port := config.GetEnv("APP_PORT", "3000")
 

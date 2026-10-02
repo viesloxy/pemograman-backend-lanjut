@@ -18,8 +18,13 @@ type EnrollmentRepository interface {
 	// karena jumlah terisi selalu dihitung dari tabel ini.
 	Delete(ctx context.Context, db DBTX, id int) error
 	ListByStudent(ctx context.Context, studentID int) ([]model.EnrollmentCourse, error)
+	// Exists memeriksa duplikasi KRS di dalam transaksi.
+	Exists(ctx context.Context, db DBTX, studentID, courseID int, tahunAkademik string) (bool, error)
+	// CountByCourse menghitung jumlah pengambil sebuah mata kuliah
+	// di dalam transaksi, dipakai untuk pemeriksaan kuota.
+	CountByCourse(ctx context.Context, db DBTX, courseID int) (int, error)
 	// TotalSKS menjumlahkan seluruh SKS yang diambil seorang mahasiswa.
-	TotalSKS(ctx context.Context, studentID int) (int, error)
+	TotalSKS(ctx context.Context, db DBTX, studentID int) (int, error)
 }
 
 type enrollmentPostgresRepository struct {
@@ -94,9 +99,9 @@ func (r *enrollmentPostgresRepository) ListByStudent(ctx context.Context, studen
 	return hasil, nil
 }
 
-func (r *enrollmentPostgresRepository) TotalSKS(ctx context.Context, studentID int) (int, error) {
+func (r *enrollmentPostgresRepository) TotalSKS(ctx context.Context, db DBTX, studentID int) (int, error) {
 	var total int
-	err := r.pool.QueryRow(ctx,
+	err := db.QueryRow(ctx,
 		`SELECT COALESCE(SUM(c.sks), 0)::int
 		 FROM enrollments e
 		 JOIN courses c ON c.id = e.course_id
@@ -106,4 +111,29 @@ func (r *enrollmentPostgresRepository) TotalSKS(ctx context.Context, studentID i
 		return 0, fmt.Errorf("menghitung total SKS: %w", err)
 	}
 	return total, nil
+}
+
+func (r *enrollmentPostgresRepository) Exists(ctx context.Context, db DBTX, studentID, courseID int, tahunAkademik string) (bool, error) {
+	var ada bool
+	err := db.QueryRow(ctx,
+		`SELECT EXISTS (
+			 SELECT 1 FROM enrollments
+			 WHERE student_id = $1 AND course_id = $2 AND tahun_akademik = $3
+		 )`, studentID, courseID, tahunAkademik,
+	).Scan(&ada)
+	if err != nil {
+		return false, fmt.Errorf("memeriksa duplikasi KRS: %w", err)
+	}
+	return ada, nil
+}
+
+func (r *enrollmentPostgresRepository) CountByCourse(ctx context.Context, db DBTX, courseID int) (int, error) {
+	var jumlah int
+	err := db.QueryRow(ctx,
+		`SELECT COUNT(*) FROM enrollments WHERE course_id = $1`, courseID,
+	).Scan(&jumlah)
+	if err != nil {
+		return 0, fmt.Errorf("menghitung pengambil mata kuliah: %w", err)
+	}
+	return jumlah, nil
 }

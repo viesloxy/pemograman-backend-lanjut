@@ -17,6 +17,7 @@ const (
 	CodeConflict         = "CONFLICT"
 	CodeUnsupportedMedia = "UNSUPPORTED_MEDIA_TYPE"
 	CodeTooManyRequests  = "TOO_MANY_REQUESTS"
+	CodeUnprocessable    = "UNPROCESSABLE_ENTITY"
 	CodeInternal         = "INTERNAL_ERROR"
 )
 
@@ -85,6 +86,13 @@ func UnsupportedMediaType(message string) *AppError {
 
 func TooManyRequests(message string) *AppError {
 	return NewAppError(fiber.StatusTooManyRequests, CodeTooManyRequests, message)
+}
+
+// Unprocessable mengirim 422 dengan pesan aturan bisnis — dipakai
+// untuk kuota penuh dan batas SKS, yang pesannya perlu menyebut
+// sisa SKS menurut spesifikasi soal.
+func Unprocessable(message string) *AppError {
+	return NewAppError(fiber.StatusUnprocessableEntity, CodeUnprocessable, message)
 }
 
 // Internal sengaja memakai pesan yang seragam dan tidak informatif.

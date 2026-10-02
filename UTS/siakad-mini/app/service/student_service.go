@@ -217,7 +217,7 @@ func (s *StudentService) Detail(c *fiber.Ctx) error {
 		return helper.Internal(err)
 	}
 
-	totalSKS, err := s.enrollments.TotalSKS(ctx, student.ID)
+	totalSKS, err := s.enrollments.TotalSKS(ctx, s.pool, student.ID)
 	if err != nil {
 		return helper.Internal(err)
 	}

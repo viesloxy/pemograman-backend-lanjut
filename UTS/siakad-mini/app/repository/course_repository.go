@@ -14,6 +14,10 @@ type CourseRepository interface {
 	// sisa kuota, yang dihitung dari tabel enrollments.
 	FindAll(ctx context.Context, q model.ListCourseQuery) ([]model.CourseWithKuota, error)
 	FindByID(ctx context.Context, id int) (model.Course, error)
+	// LockByID mengunci baris mata kuliah (SELECT ... FOR UPDATE) sampai
+	// transaksi selesai. Pemeriksaan kuota yang dilakukan setelah kunci
+	// ini tidak dapat balapan dengan permintaan lain.
+	LockByID(ctx context.Context, db DBTX, id int) (model.Course, error)
 }
 
 type coursePostgresRepository struct {
@@ -83,6 +87,18 @@ func (r *coursePostgresRepository) FindByID(ctx context.Context, id int) (model.
 	).Scan(&c.ID, &c.KodeMK, &c.NamaMK, &c.SKS, &c.Semester, &c.Kuota)
 	if err != nil {
 		return model.Course{}, translateError(err, "mencari mata kuliah")
+	}
+	return c, nil
+}
+
+func (r *coursePostgresRepository) LockByID(ctx context.Context, db DBTX, id int) (model.Course, error) {
+	var c model.Course
+	err := db.QueryRow(ctx,
+		`SELECT id, kode_mk, nama_mk, sks, semester, kuota
+		 FROM courses WHERE id = $1 FOR UPDATE`, id,
+	).Scan(&c.ID, &c.KodeMK, &c.NamaMK, &c.SKS, &c.Semester, &c.Kuota)
+	if err != nil {
+		return model.Course{}, translateError(err, "mengunci mata kuliah")
 	}
 	return c, nil
 }
