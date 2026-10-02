@@ -43,15 +43,21 @@ func main() {
 		time.Duration(config.GetEnvInt("JWT_ACCESS_TTL_MINUTES", 15))*time.Minute,
 	)
 
+	permissions := helper.SIAKADPermissions()
+	logger.Info("permission dimuat", slog.Any("roles", permissions.KnownRoles()))
+
 	userRepository := repository.NewUserRepository(pool)
 	studentRepository := repository.NewStudentRepository(pool)
 
 	authService := service.NewAuthService(userRepository, studentRepository, jwtManager)
+	studentService := service.NewStudentService(studentRepository, userRepository, pool)
 
 	app := config.NewApp(logger, route.Dependencies{
-		Pool: pool,
-		JWT:  jwtManager,
-		Auth: authService,
+		Pool:        pool,
+		JWT:         jwtManager,
+		Permissions: permissions,
+		Auth:        authService,
+		Students:    studentService,
 	})
 	port := config.GetEnv("APP_PORT", "3000")
 

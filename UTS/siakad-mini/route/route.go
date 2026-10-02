@@ -12,9 +12,11 @@ import (
 // Dependencies mengumpulkan seluruh objek yang dibutuhkan route.
 // Daftarnya bertambah seiring bertambahnya fitur.
 type Dependencies struct {
-	Pool *pgxpool.Pool
-	JWT  *helper.JWTManager
-	Auth *service.AuthService
+	Pool        *pgxpool.Pool
+	JWT         *helper.JWTManager
+	Permissions *helper.PermissionSet
+	Auth        *service.AuthService
+	Students    *service.StudentService
 }
 
 // Register memetakan seluruh URL aplikasi ke handler-nya.
@@ -42,4 +44,9 @@ func Register(app *fiber.App, deps Dependencies) {
 
 	// Selebihnya wajib membawa access token.
 	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.Auth.Me)
+
+	// Kelola mahasiswa: khusus admin, dijaga permission.
+	students := api.Group("/students", middleware.RequireAuth(deps.JWT))
+	students.Get("/", middleware.RequirePermission(deps.Permissions, "student:list"), deps.Students.List)
+	students.Post("/", middleware.RequirePermission(deps.Permissions, "student:create"), deps.Students.Create)
 }
