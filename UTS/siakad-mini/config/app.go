@@ -8,6 +8,7 @@ import (
 
 	"siakad-mini/app/model"
 	"siakad-mini/helper"
+	"siakad-mini/middleware"
 	"siakad-mini/route"
 )
 
@@ -21,6 +22,7 @@ func NewApp(logger *slog.Logger, deps route.Dependencies) *fiber.App {
 		BodyLimit:    1 * 1024 * 1024,
 	})
 
+	middleware.Register(app, logger, GetEnv("ALLOWED_ORIGINS", ""))
 	route.Register(app, deps)
 
 	return app
