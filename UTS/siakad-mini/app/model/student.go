@@ -15,19 +15,19 @@ type Student struct {
 }
 
 type CreateStudentRequest struct {
-	NIM         string   `json:"nim"`
-	Nama        string   `json:"nama"`
-	Email       string   `json:"email"`
-	Prodi       string   `json:"prodi"`
-	Angkatan    int      `json:"angkatan"`
-	IPKTerakhir *float64 `json:"ipk_terakhir"`
+	NIM         string   `json:"nim" validate:"required,nim"`
+	Nama        string   `json:"nama" validate:"required,min=3,max=150"`
+	Email       string   `json:"email" validate:"required,max=255,email"`
+	Prodi       string   `json:"prodi" validate:"required,max=100"`
+	Angkatan    int      `json:"angkatan" validate:"required,angkatan"`
+	IPKTerakhir *float64 `json:"ipk_terakhir" validate:"omitnil,gte=0,lte=4"`
 }
 
 type UpdateStudentRequest struct {
-	Nama        string   `json:"nama"`
-	Prodi       string   `json:"prodi"`
-	Angkatan    int      `json:"angkatan"`
-	IPKTerakhir *float64 `json:"ipk_terakhir"`
+	Nama        string   `json:"nama" validate:"required,min=3,max=150"`
+	Prodi       string   `json:"prodi" validate:"required,max=100"`
+	Angkatan    int      `json:"angkatan" validate:"required,angkatan"`
+	IPKTerakhir *float64 `json:"ipk_terakhir" validate:"omitnil,gte=0,lte=4"`
 }
 
 type ListStudentQuery struct {

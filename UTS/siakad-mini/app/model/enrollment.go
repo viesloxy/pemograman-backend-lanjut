@@ -11,8 +11,8 @@ type Enrollment struct {
 }
 
 type CreateEnrollmentRequest struct {
-	CourseID      int    `json:"course_id"`
-	TahunAkademik string `json:"tahun_akademik"`
+	CourseID      int    `json:"course_id" validate:"required,gt=0"`
+	TahunAkademik string `json:"tahun_akademik" validate:"required,tahunakademik"`
 }
 
 // EnrollmentCourse adalah satu baris KRS: mata kuliah yang diambil

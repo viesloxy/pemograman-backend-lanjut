@@ -2,8 +2,10 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"siakad-mini/app/model"
+	"siakad-mini/helper"
 )
 
 func ipk(v float64) *float64 { return &v }
@@ -37,16 +39,16 @@ func TestValidateCreateStudent(t *testing.T) {
 		Email: "budi@siakad.test", Prodi: "Sistem Informasi",
 		Angkatan: 2025, IPKTerakhir: ipk(3.50),
 	}
-	if errs := validateCreateStudent(sah); errs != nil {
+	if errs := helper.ValidateStruct(sah); errs != nil {
 		t.Errorf("request sah justru ditolak: %v", errs)
 	}
 
 	// Seluruh field salah: setiap field menghasilkan pesannya.
 	salah := model.CreateStudentRequest{
 		NIM: "123", Nama: "", Email: "bukan-email",
-		Prodi: "", Angkatan: angkatanMax + 1, IPKTerakhir: ipk(4.5),
+		Prodi: "", Angkatan: time.Now().Year() + 1, IPKTerakhir: ipk(4.5),
 	}
-	errs := validateCreateStudent(salah)
+	errs := helper.ValidateStruct(salah)
 	for _, field := range []string{"nim", "nama", "email", "prodi", "angkatan", "ipk_terakhir"} {
 		if len(errs[field]) == 0 {
 			t.Errorf("field %s seharusnya menghasilkan pesan kesalahan", field)
@@ -56,7 +58,7 @@ func TestValidateCreateStudent(t *testing.T) {
 	// IPK kosong sah: field itu opsional.
 	tanpaIPK := sah
 	tanpaIPK.IPKTerakhir = nil
-	if errs := validateCreateStudent(tanpaIPK); errs != nil {
+	if errs := helper.ValidateStruct(tanpaIPK); errs != nil {
 		t.Errorf("tanpa IPK seharusnya sah: %v", errs)
 	}
 }

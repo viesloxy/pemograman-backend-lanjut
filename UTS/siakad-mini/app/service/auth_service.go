@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"regexp"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,8 +10,6 @@ import (
 	"siakad-mini/app/repository"
 	"siakad-mini/helper"
 )
-
-var emailFormat = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 
 type AuthService struct {
 	users    repository.UserRepository
@@ -28,30 +25,6 @@ func NewAuthService(
 	return &AuthService{users: users, students: students, jwt: jwtManager}
 }
 
-// validateLogin adalah business rule murni: menerima struct dan
-// mengembalikan daftar kesalahan per field, tanpa menyentuh fiber.Ctx.
-func validateLogin(req model.LoginRequest) map[string][]string {
-	errs := map[string][]string{}
-
-	req.Email = strings.TrimSpace(req.Email)
-	if req.Email == "" {
-		errs["email"] = append(errs["email"], "email wajib diisi")
-	} else if !emailFormat.MatchString(req.Email) {
-		errs["email"] = append(errs["email"], "format email tidak valid")
-	}
-
-	if req.Password == "" {
-		errs["password"] = append(errs["password"], "password wajib diisi")
-	} else if len(req.Password) < 8 {
-		errs["password"] = append(errs["password"], "password minimal 8 karakter")
-	}
-
-	if len(errs) == 0 {
-		return nil
-	}
-	return errs
-}
-
 func (s *AuthService) Login(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -61,7 +34,8 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 		return helper.BadRequest("body harus berupa JSON yang valid")
 	}
 
-	if errs := validateLogin(req); errs != nil {
+	req.Email = strings.TrimSpace(req.Email)
+	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
 	}
 
