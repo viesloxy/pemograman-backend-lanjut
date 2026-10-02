@@ -20,6 +20,7 @@ var kolomUrutStudent = map[string]string{
 type StudentRepository interface {
 	FindAll(ctx context.Context, q model.ListStudentQuery) ([]model.Student, int, error)
 	FindByID(ctx context.Context, id int) (model.Student, error)
+	FindByUserID(ctx context.Context, userID int) (model.Student, error)
 	// FindByNIM dipakai untuk memeriksa duplikat. Mahasiswa yang sudah
 	// di-soft delete tetap terhitung, sama seperti unique index di database.
 	FindByNIM(ctx context.Context, nim string) (model.Student, error)
@@ -109,6 +110,19 @@ func (r *studentPostgresRepository) FindByID(ctx context.Context, id int) (model
 	).Scan(&s.ID, &s.UserID, &s.NIM, &s.Nama, &s.Prodi, &s.Angkatan, &s.IPKTerakhir, &s.DeletedAt, &s.CreatedAt)
 	if err != nil {
 		return model.Student{}, translateError(err, "mencari mahasiswa")
+	}
+	return s, nil
+}
+
+func (r *studentPostgresRepository) FindByUserID(ctx context.Context, userID int) (model.Student, error) {
+	var s model.Student
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, user_id, nim, nama, prodi, angkatan, ipk_terakhir, deleted_at, created_at
+		 FROM students
+		 WHERE user_id = $1 AND deleted_at IS NULL`, userID,
+	).Scan(&s.ID, &s.UserID, &s.NIM, &s.Nama, &s.Prodi, &s.Angkatan, &s.IPKTerakhir, &s.DeletedAt, &s.CreatedAt)
+	if err != nil {
+		return model.Student{}, translateError(err, "mencari mahasiswa berdasarkan user")
 	}
 	return s, nil
 }

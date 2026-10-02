@@ -8,14 +8,27 @@ import (
 	"syscall"
 	"time"
 
+	"siakad-mini/app/repository"
+	"siakad-mini/app/service"
 	"siakad-mini/config"
 	"siakad-mini/database"
+	"siakad-mini/helper"
 	"siakad-mini/route"
 )
+
+const minSecretLength = 32
 
 func main() {
 	config.LoadEnv()
 	logger := config.NewLogger()
+
+	// JWT_SECRET yang pendek berarti token mudah dipalsukan.
+	jwtSecret := config.GetEnv("JWT_SECRET", "")
+	if len(jwtSecret) < minSecretLength {
+		logger.Error("JWT_SECRET tidak diisi atau terlalu pendek",
+			slog.Int("minimal_karakter", minSecretLength))
+		os.Exit(1)
+	}
 
 	pool, err := database.NewPool(context.Background())
 	if err != nil {
@@ -24,10 +37,22 @@ func main() {
 	}
 	defer pool.Close()
 
+	jwtManager := helper.NewJWTManager(
+		jwtSecret,
+		config.GetEnv("JWT_ISSUER", "siakad-mini"),
+		time.Duration(config.GetEnvInt("JWT_ACCESS_TTL_MINUTES", 15))*time.Minute,
+	)
+
+	userRepository := repository.NewUserRepository(pool)
+	studentRepository := repository.NewStudentRepository(pool)
+
+	authService := service.NewAuthService(userRepository, studentRepository, jwtManager)
+
 	app := config.NewApp(logger, route.Dependencies{
 		Pool: pool,
+		JWT:  jwtManager,
+		Auth: authService,
 	})
-
 	port := config.GetEnv("APP_PORT", "3000")
 
 	// Server dijalankan pada goroutine terpisah agar main bisa menunggu
