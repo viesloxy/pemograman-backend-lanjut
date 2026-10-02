@@ -1,19 +1,58 @@
 package main
 
 import (
-	"log"
+	"context"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"siakad-mini/config"
+	"siakad-mini/database"
+	"siakad-mini/route"
 )
 
 func main() {
-	app := fiber.New()
+	config.LoadEnv()
+	logger := config.NewLogger()
 
-	app.Get("/api/v1/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status": "ok",
-		})
+	pool, err := database.NewPool(context.Background())
+	if err != nil {
+		logger.Error("gagal terhubung ke database", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	app := config.NewApp(logger, route.Dependencies{
+		Pool: pool,
 	})
 
-	log.Fatal(app.Listen(":3000"))
+	port := config.GetEnv("APP_PORT", "3000")
+
+	// Server dijalankan pada goroutine terpisah agar main bisa menunggu
+	// sinyal berhenti (Ctrl+C) dan mematikan server secara rapi.
+	go func() {
+		if err := app.Listen(":" + port); err != nil {
+			logger.Error("server berhenti", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	}()
+
+	logger.Info("server berjalan", slog.String("port", port))
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("sinyal berhenti diterima, menutup server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := app.ShutdownWithContext(ctx); err != nil {
+		logger.Error("gagal menutup server dengan rapi", slog.String("error", err.Error()))
+	}
+
+	logger.Info("server berhenti dengan rapi")
 }
