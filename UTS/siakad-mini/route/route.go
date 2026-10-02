@@ -49,4 +49,9 @@ func Register(app *fiber.App, deps Dependencies) {
 	students := api.Group("/students", middleware.RequireAuth(deps.JWT))
 	students.Get("/", middleware.RequirePermission(deps.Permissions, "student:list"), deps.Students.List)
 	students.Post("/", middleware.RequirePermission(deps.Permissions, "student:create"), deps.Students.Create)
+	// Detail tanpa permission: admin bebas, mahasiswa hanya dirinya —
+	// keputusannya bergantung isi data, diperiksa di service.
+	students.Get("/:id", deps.Students.Detail)
+	students.Put("/:id", middleware.RequirePermission(deps.Permissions, "student:update:any"), deps.Students.Update)
+	students.Delete("/:id", middleware.RequirePermission(deps.Permissions, "student:delete"), deps.Students.Delete)
 }

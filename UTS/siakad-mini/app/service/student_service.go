@@ -21,17 +21,19 @@ const (
 )
 
 type StudentService struct {
-	students repository.StudentRepository
-	users    repository.UserRepository
-	pool     *pgxpool.Pool
+	students    repository.StudentRepository
+	users       repository.UserRepository
+	enrollments repository.EnrollmentRepository
+	pool        *pgxpool.Pool
 }
 
 func NewStudentService(
 	students repository.StudentRepository,
 	users repository.UserRepository,
+	enrollments repository.EnrollmentRepository,
 	pool *pgxpool.Pool,
 ) *StudentService {
-	return &StudentService{students: students, users: users, pool: pool}
+	return &StudentService{students: students, users: users, enrollments: enrollments, pool: pool}
 }
 
 // List mengembalikan daftar mahasiswa dengan pagination, filter,
@@ -177,4 +179,141 @@ func duplicateField(err error) (string, bool) {
 	default:
 		return "email", true
 	}
+}
+
+// Detail mengembalikan data mahasiswa beserta daftar mata kuliah
+// yang diambil, total SKS, dan batas SKS menurut IPK-nya.
+// Admin boleh melihat semua; mahasiswa hanya dirinya sendiri.
+func (s *StudentService) Detail(c *fiber.Ctx) error {
+	ctx, cancel := helper.RequestContext(c)
+	defer cancel()
+
+	authUser, ok := helper.CurrentUser(c)
+	if !ok {
+		return helper.Unauthorized("belum terautentikasi")
+	}
+
+	id, valid := helper.ParamID(c)
+	if !valid {
+		return helper.NotFound("mahasiswa tidak ditemukan")
+	}
+
+	student, err := s.students.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return helper.NotFound("mahasiswa tidak ditemukan")
+		}
+		return helper.Internal(err)
+	}
+
+	// Pemeriksaan kepemilikan: bergantung pada isi data, maka
+	// tempatnya di service, bukan di middleware.
+	if !BolehLihatStudent(authUser, student.UserID) {
+		return helper.Forbidden("Anda hanya boleh mengakses data Anda sendiri")
+	}
+
+	mataKuliah, err := s.enrollments.ListByStudent(ctx, student.ID)
+	if err != nil {
+		return helper.Internal(err)
+	}
+
+	totalSKS, err := s.enrollments.TotalSKS(ctx, student.ID)
+	if err != nil {
+		return helper.Internal(err)
+	}
+
+	return helper.Success(c, fiber.StatusOK, "Detail mahasiswa berhasil diambil", model.StudentDetailResponse{
+		Student:    student,
+		MataKuliah: mataKuliah,
+		TotalSKS:   totalSKS,
+		BatasSKS:   BatasSKS(student.IPKTerakhir),
+	})
+}
+
+// Update memperbarui data mahasiswa. NIM tidak dapat diubah karena
+// tidak pernah dibaca dari body request.
+func (s *StudentService) Update(c *fiber.Ctx) error {
+	ctx, cancel := helper.RequestContext(c)
+	defer cancel()
+
+	id, valid := helper.ParamID(c)
+	if !valid {
+		return helper.NotFound("mahasiswa tidak ditemukan")
+	}
+
+	var req model.UpdateStudentRequest
+	if err := c.BodyParser(&req); err != nil {
+		return helper.BadRequest("body harus berupa JSON yang valid")
+	}
+
+	if errs := validateUpdateStudent(req); errs != nil {
+		return helper.Validation(errs)
+	}
+
+	student, err := s.students.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return helper.NotFound("mahasiswa tidak ditemukan")
+		}
+		return helper.Internal(err)
+	}
+
+	student.Nama = strings.TrimSpace(req.Nama)
+	student.Prodi = strings.TrimSpace(req.Prodi)
+	student.Angkatan = req.Angkatan
+	student.IPKTerakhir = req.IPKTerakhir
+
+	if err := s.students.Update(ctx, &student); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return helper.NotFound("mahasiswa tidak ditemukan")
+		}
+		return helper.Internal(err)
+	}
+
+	return helper.Success(c, fiber.StatusOK, "Data mahasiswa berhasil diperbarui", student)
+}
+
+// Delete melakukan soft delete: students dan users diberi deleted_at,
+// sehingga tidak muncul di daftar dan tidak dapat login lagi.
+func (s *StudentService) Delete(c *fiber.Ctx) error {
+	ctx, cancel := helper.RequestContext(c)
+	defer cancel()
+
+	id, valid := helper.ParamID(c)
+	if !valid {
+		return helper.NotFound("mahasiswa tidak ditemukan")
+	}
+
+	student, err := s.students.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return helper.NotFound("mahasiswa tidak ditemukan")
+		}
+		return helper.Internal(err)
+	}
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return helper.Internal(err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err := s.students.SoftDelete(ctx, student.ID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return helper.NotFound("mahasiswa tidak ditemukan")
+		}
+		return helper.Internal(err)
+	}
+	if err := s.users.SoftDelete(ctx, tx, student.UserID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return helper.NotFound("mahasiswa tidak ditemukan")
+		}
+		return helper.Internal(err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return helper.Internal(err)
+	}
+
+	return helper.NoContent(c)
 }

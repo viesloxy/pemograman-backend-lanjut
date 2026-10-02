@@ -48,9 +48,10 @@ func main() {
 
 	userRepository := repository.NewUserRepository(pool)
 	studentRepository := repository.NewStudentRepository(pool)
+	enrollmentRepository := repository.NewEnrollmentRepository(pool)
 
 	authService := service.NewAuthService(userRepository, studentRepository, jwtManager)
-	studentService := service.NewStudentService(studentRepository, userRepository, pool)
+	studentService := service.NewStudentService(studentRepository, userRepository, enrollmentRepository, pool)
 
 	app := config.NewApp(logger, route.Dependencies{
 		Pool:        pool,
