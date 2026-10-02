@@ -17,6 +17,7 @@ type Dependencies struct {
 	Permissions *helper.PermissionSet
 	Auth        *service.AuthService
 	Students    *service.StudentService
+	Courses     *service.CourseService
 }
 
 // Register memetakan seluruh URL aplikasi ke handler-nya.
@@ -54,4 +55,8 @@ func Register(app *fiber.App, deps Dependencies) {
 	students.Get("/:id", deps.Students.Detail)
 	students.Put("/:id", middleware.RequirePermission(deps.Permissions, "student:update:any"), deps.Students.Update)
 	students.Delete("/:id", middleware.RequirePermission(deps.Permissions, "student:delete"), deps.Students.Delete)
+
+	// Mata kuliah dapat dilihat semua role yang sudah login.
+	courses := api.Group("/courses", middleware.RequireAuth(deps.JWT))
+	courses.Get("/", deps.Courses.List)
 }
