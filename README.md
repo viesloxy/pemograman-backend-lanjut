@@ -14,6 +14,7 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 ```
 .
 ├── modul-<N>/           ← kode praktikum + tugas mandiri per pertemuan
+├── UTS/siakad-mini/     ← proyek Ujian Tengah Semester: RESTful API SIAKAD Mini
 └── README.md
 ```
 
@@ -54,6 +55,12 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 - **Topik:** validasi deklaratif dengan go-playground/validator, cursor pagination (keyset), content negotiation (JSON + CSV), error handling terpusat dengan AppError dan kode error stabil, log identitas.
 - **Tugas:** [`modul-7/api-students/`](./modul-7/api-students/) — API mahasiswa Modul 6 dimodernisasi: validasi pindah ke tag, pagination berganti cursor, respons error seragam dengan kode dan request_id.
 
+### UTS — RESTful API SIAKAD Mini
+
+- **Studi Kasus:** implementasi materi pertemuan 1 sampai 7 dalam satu API utuh untuk layanan akademik sederhana: pengelolaan data mahasiswa, mata kuliah, dan Kartu Rencana Studi (KRS) dengan dua peran, admin dan mahasiswa, melalui 10 endpoint.
+- **Topik yang diimplementasikan:** clean architecture (struktur baku pertemuan 4), PostgreSQL dengan repository pattern, autentikasi bcrypt + JWT dengan rate limiter login, kontrol akses peran dengan pemeriksaan kepemilikan data, transaksi PostgreSQL dengan row locking untuk aturan kuota dan batas SKS (IPK menentukan 18/21/24 SKS), soft delete, validasi deklaratif dengan go-playground/validator, dan error handling terpusat dengan format respons seragam.
+- **Kode:** [`UTS/siakad-mini/`](./UTS/siakad-mini/) — lengkap dengan migration, seeder (1 admin, 20 mahasiswa, 11 mata kuliah), koleksi Postman di folder [`postman/`](./UTS/siakad-mini/postman/), dan README dokumentasi API.
+
 <!-- Modul berikutnya ditambahkan di sini -->
 
 ## Cara Menjalankan
@@ -67,6 +74,8 @@ go run main.go
 ```
 
 Proyek yang terdiri dari beberapa berkas/paket (modul 2 sampai 7) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 sampai 7 membutuhkan PostgreSQL berjalan dan berkas `.env`. Proyek modul 5 sampai 7 juga membutuhkan `JWT_SECRET` yang valid. Unit test: `go test ./app/service/ ./helper/ -v` dari folder proyeknya.
+
+Proyek UTS (`UTS/siakad-mini/`) dijalankan dengan `go run .` dari folder proyeknya: membutuhkan database `siakad_mini`, migration, seeder, `.env` dengan `JWT_SECRET` minimal 32 karakter, dan unit testnya berjalan dengan `go test ./...`. Rincian lengkap ada pada [`UTS/siakad-mini/README.md`](./UTS/siakad-mini/README.md).
 
 ## Author
 

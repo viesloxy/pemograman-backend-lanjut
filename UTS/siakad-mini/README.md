@@ -33,6 +33,12 @@ go build -o siakad-mini.exe . && ./siakad-mini.exe
 
 Server berjalan di `http://localhost:3000`. Cek kesehatan: `GET /api/v1/health`.
 
+Unit test business rules (batas SKS, validasi, pemeriksaan kepemilikan) berjalan tanpa server dan tanpa database:
+
+```bash
+go test ./...
+```
+
 ## Akun Seed
 
 | Peran | Email | Password |
@@ -55,7 +61,7 @@ Server berjalan di `http://localhost:3000`. Cek kesehatan: `GET /api/v1/health`.
 | 9 | POST | /api/v1/enrollments | mahasiswa | Mengambil mata kuliah (menambah KRS) |
 | 10 | DELETE | /api/v1/enrollments/{id} | mahasiswa (milik sendiri) | Membatalkan mata kuliah dari KRS |
 
-Semua endpoint kecuali login memerlukan header `Authorization: Bearer <access_token>`.
+Semua endpoint kecuali login memerlukan header `Authorization: Bearer <access_token>`. Koleksi Postman pada folder `postman/` sudah berisi seluruh request pengujian berurutan beserta skrip penyimpan token otomatis; tinggal diimpor ke Postman, lalu jalankan folder 1 terlebih dahulu untuk mendapatkan token.
 
 ## Aturan Bisnis
 
