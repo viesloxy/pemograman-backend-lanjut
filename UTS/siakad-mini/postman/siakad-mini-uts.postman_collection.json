@@ -1,0 +1,1766 @@
+{
+  "info": {
+    "_postman_id": "b7e3f6a2-1111-4c2d-9a4e-siakaduts01",
+    "name": "SIAKAD Mini - UTS PBE",
+    "description": "Koleksi pengujian 10 endpoint SIAKAD Mini, berurutan sesuai nomor pada soal.\n\nPersiapan:\n1. Reset database: TRUNCATE enrollments, students, courses, users RESTART IDENTITY CASCADE; lalu jalankan ulang migrations/002_seed.sql.\n2. Jalankan server siakad-mini.\n3. Jalankan folder 1 berurutan: lima login pertama menyimpan token otomatis ke variabel koleksi.\n\nCatatan rate limiter: maksimal 5 permintaan login per menit per IP. Bila muncul 429, tunggu satu menit.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "mhsToken",
+      "value": ""
+    },
+    {
+      "key": "fahmiToken",
+      "value": ""
+    },
+    {
+      "key": "mhsLainToken",
+      "value": ""
+    },
+    {
+      "key": "mhs86Token",
+      "value": ""
+    },
+    {
+      "key": "tokenBaru",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1 Login - POST /auth/login",
+      "item": [
+        {
+          "name": "01 Login admin (200, simpan adminToken)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@siakad.test\",\n  \"password\": \"admin1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "    pm.collectionVariables.set('adminToken', json.data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Login mahasiswa 000434241084 (200, simpan mhsToken)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"000434241084@siakad.test\",\n  \"password\": \"000434241084\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "    pm.collectionVariables.set('mhsToken', json.data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Login mahasiswa 000434241097 IPK rendah (200, simpan fahmiToken)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"000434241097@siakad.test\",\n  \"password\": \"000434241097\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "    pm.collectionVariables.set('fahmiToken', json.data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Login mahasiswa 000434241085 (200, simpan mhsLainToken)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"000434241085@siakad.test\",\n  \"password\": \"000434241085\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "    pm.collectionVariables.set('mhsLainToken', json.data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Login mahasiswa 000434241086 (200, simpan mhs86Token)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"000434241086@siakad.test\",\n  \"password\": \"000434241086\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "    pm.collectionVariables.set('mhs86Token', json.data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Login password salah (401, pesan sama)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"000434241084@siakad.test\",\n  \"password\": \"passwordsalah1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Jalankan setelah menunggu satu menit dari login kelima, karena lima login pertama sudah memakai jatah rate limiter."
+          }
+        },
+        {
+          "name": "07 Login email tidak dikenal (401, pesan sama)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"takada@siakad.test\",\n  \"password\": \"passwordsalah1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Jalankan setelah menunggu satu menit dari login kelima, karena lima login pertama sudah memakai jatah rate limiter."
+          }
+        },
+        {
+          "name": "08 Login validasi gagal (422)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bukan-email\",\n  \"password\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "09 Brute force: klik 6x beruntun (401x5 lalu 429)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@siakad.test\",\n  \"password\": \"salah1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "Jalankan setelah menunggu 1 menit dari login terakhir agar jendela rate limiter bersih."
+        }
+      ]
+    },
+    {
+      "name": "2 Profil - GET /auth/me",
+      "item": [
+        {
+          "name": "01 Profil admin (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "02 Profil mahasiswa + data students (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "03 Tanpa token (401)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "04 Token rusak (401)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          },
+          "description": "Ubah isi token di header Authorization: hapus atau tambah satu huruf di bagian akhir sebelum Send."
+        }
+      ]
+    },
+    {
+      "name": "3 Daftar Mahasiswa - GET /students",
+      "item": [
+        {
+          "name": "01 Pagination page=1 per_page=5 (200 + meta)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students?page=1&per_page=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "5"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "02 Filter prodi + angkatan (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students?prodi=Teknik Informatika&angkatan=2023",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "prodi",
+                  "value": "Teknik Informatika"
+                },
+                {
+                  "key": "angkatan",
+                  "value": "2023"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "03 Search nama (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students?search=vito",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "vito"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "04 Sort IPK terbesar (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students?sort=-ipk_terakhir",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "-ipk_terakhir"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "05 Akses oleh mahasiswa (403)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 Tambah Mahasiswa - POST /students",
+      "item": [
+        {
+          "name": "01 Tambah mahasiswa sah (201 + Location)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"532147208001\",\n  \"nama\": \"Budi Simanjuntak\",\n  \"email\": \"budi@siakad.test\",\n  \"prodi\": \"Sistem Informasi\",\n  \"angkatan\": 2025,\n  \"ipk_terakhir\": 3.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "02 Login akun baru dengan password = NIM (200)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"budi@siakad.test\",\n  \"password\": \"532147208001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "    pm.collectionVariables.set('tokenBaru', json.data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Duplikat NIM (422)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"532147208001\",\n  \"nama\": \"Budi Lagi\",\n  \"email\": \"lain@siakad.test\",\n  \"prodi\": \"Sistem Informasi\",\n  \"angkatan\": 2025\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "04 Duplikat email (422)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"532147208002\",\n  \"nama\": \"Budi Lagi\",\n  \"email\": \"budi@siakad.test\",\n  \"prodi\": \"Sistem Informasi\",\n  \"angkatan\": 2025\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "05 Validasi banyak field (422)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"123\",\n  \"nama\": \"ab\",\n  \"email\": \"salah\",\n  \"prodi\": \"\",\n  \"angkatan\": 1800,\n  \"ipk_terakhir\": 9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "06 Tambah oleh mahasiswa (403)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"532147208003\",\n  \"nama\": \"Sneaky\",\n  \"email\": \"sneaky@siakad.test\",\n  \"prodi\": \"Sistem Informasi\",\n  \"angkatan\": 2025\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 Detail Mahasiswa - GET /students/{id}",
+      "item": [
+        {
+          "name": "01 Detail oleh admin (200, id 5)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students/5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "5"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "02 Detail milik sendiri (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students/5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "5"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "03 Detail milik orang lain (403)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students/5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "5"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsLainToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "04 Detail id tidak ada (404)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students/9999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "9999"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "05 Detail id sudah di-soft delete (404)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students/21",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "21"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          },
+          "description": "Jalankan setelah folder 7 menghapus mahasiswa id 21."
+        }
+      ]
+    },
+    {
+      "name": "6 Update Mahasiswa - PUT /students/{id}",
+      "item": [
+        {
+          "name": "01 Update oleh admin, NIM tetap (200)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/students/21",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "21"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Budi S. Simanjuntak\",\n  \"prodi\": \"Sistem Informasi\",\n  \"angkatan\": 2025,\n  \"ipk_terakhir\": 3.75\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "02 IPK di luar 0-4 (422)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/students/21",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "21"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Budi S. Simanjuntak\",\n  \"prodi\": \"Sistem Informasi\",\n  \"angkatan\": 2025,\n  \"ipk_terakhir\": 9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "03 Update oleh mahasiswa (403)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/students/5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "5"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Dirubah Paksa\",\n  \"prodi\": \"Sistem Informasi\",\n  \"angkatan\": 2024\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7 Hapus Mahasiswa - DELETE /students/{id}",
+      "item": [
+        {
+          "name": "01 Hapus akun baru (204)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/students/21",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "21"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "02 Hapus id yang sama lagi (404)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/students/21",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "21"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "03 Daftar tanpa yang terhapus (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students?search=Budi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students?search=Budi"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "04 Login akun terhapus (401)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"budi@siakad.test\",\n  \"password\": \"532147208001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8 Daftar Mata Kuliah - GET /courses",
+      "item": [
+        {
+          "name": "01 Semua mata kuliah + terisi/sisa (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/courses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courses"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "02 Filter semester=3 (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/courses?semester=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "semester",
+                  "value": "3"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "03 Search praktikum (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/courses?search=praktikum",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "praktikum"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "04 Hanya yang tersedia (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/courses?available=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "available",
+                  "value": "true"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9 KRS - POST /enrollments",
+      "item": [
+        {
+          "name": "01 Ambil AGI401 oleh 084 (201)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 1,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "02 Ambil mata kuliah yang sama lagi (409)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 1,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "03 Body tidak valid (422)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 0,\n  \"tahun_akademik\": \"2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "04 Course tidak ada (404)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 9999,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "05 Ambil oleh admin (403)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 1,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "06 Fahmi ambil course 1-10: ganti course_id 1 s/d 10, semua 201",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 1,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "Ulangi request ini dengan course_id 1 sampai 10 (course 3 SIC308 termasuk). Total 17 SKS."
+        },
+        {
+          "name": "07 Fahmi ambil course 11 (422, pesan sisa SKS)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 11,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "08 Detail Fahmi: total_sks 17, batas_sks 18 (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students/18",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students",
+                "18"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "09 Kuota SIC308: 084 ambil (201, jadi 2/3)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 3,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "10 Kuota SIC308: 085 ambil (201, jadi 3/3)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsLainToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 3,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "11 Kuota SIC308: 086 ditolak (422 penuh 3/3)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhs86Token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 3,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Batal KRS - DELETE /enrollments/{id}",
+      "item": [
+        {
+          "name": "01 Batal milik sendiri (204)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments",
+                "1"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          },
+          "description": "Id 1 = enrollment AGI401 milik 084 dari request 01 folder 9. Sesuaikan bila id berbeda."
+        },
+        {
+          "name": "02 Cek kuota AGI401 bertambah kembali (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/courses?search=AGI401",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courses?search=AGI401"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "03 Batal milik orang lain (403)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments",
+                "2"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsLainToken}}"
+              }
+            ]
+          },
+          "description": "Id 2 milik Fahmi; 085 mencoba membatalkannya."
+        },
+        {
+          "name": "04 Batal id tidak ada (404)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments",
+                "999999"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mhsLainToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "05 Batal oleh admin (403)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments",
+                "2"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
