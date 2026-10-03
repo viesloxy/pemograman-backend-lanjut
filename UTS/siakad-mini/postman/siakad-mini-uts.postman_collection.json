@@ -1452,18 +1452,9 @@
           }
         },
         {
-          "name": "06 Fahmi ambil course 1-10: ganti course_id 1 s/d 10, semua 201",
+          "name": "06a Fahmi ambil course 1 (201)",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/enrollments",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "enrollments"
-              ]
-            },
             "header": [
               {
                 "key": "Content-Type",
@@ -1482,9 +1473,333 @@
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
             }
           },
-          "description": "Ulangi request ini dengan course_id 1 sampai 10 (course 3 SIC308 termasuk). Total 17 SKS."
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06b Fahmi ambil course 2 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 2,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06c Fahmi ambil course 3 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 3,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06d Fahmi ambil course 4 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 4,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06e Fahmi ambil course 5 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 5,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06f Fahmi ambil course 6 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 6,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06g Fahmi ambil course 7 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 7,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06h Fahmi ambil course 8 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 8,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06i Fahmi ambil course 9 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 9,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
+        },
+        {
+          "name": "06j Fahmi ambil course 10 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fahmiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 10,\n  \"tahun_akademik\": \"2026/2027-Ganjil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enrollments"
+              ]
+            }
+          },
+          "description": "Fahmi (IPK 2.15, batas 18 SKS). Course 3 sekaligus mengisi SIC308."
         },
         {
           "name": "07 Fahmi ambil course 11 (422, pesan sisa SKS)",
