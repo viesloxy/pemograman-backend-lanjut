@@ -49,6 +49,11 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 - **Topik:** Role Based Access Control (tabel roles, permissions, role_permissions), middleware RequirePermission, pemeriksaan kepemilikan di service, fail closed, 401 vs 403.
 - **Tugas:** [`modul-6/api-students/`](./modul-6/api-students/) — API mahasiswa Modul 5 ditambah lapisan otorisasi RBAC; admin akses penuh, staff baca dan tambah, user hanya miliknya sendiri.
 
+### Modul 7 — Advanced API Design
+
+- **Topik:** validasi deklaratif dengan go-playground/validator, cursor pagination (keyset), content negotiation (JSON + CSV), error handling terpusat dengan AppError dan kode error stabil, log identitas.
+- **Tugas:** [`modul-7/api-students/`](./modul-7/api-students/) — API mahasiswa Modul 6 dimodernisasi: validasi pindah ke tag, pagination berganti cursor, respons error seragam dengan kode dan request_id.
+
 <!-- Modul berikutnya ditambahkan di sini -->
 
 ## Cara Menjalankan
@@ -61,7 +66,7 @@ go mod tidy
 go run main.go
 ```
 
-Proyek yang terdiri dari beberapa berkas/paket (modul 2 sampai 6) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 sampai 6 membutuhkan PostgreSQL berjalan dan berkas `.env`. Proyek modul 5 dan 6 juga membutuhkan `JWT_SECRET` yang valid. Unit test: `go test ./app/service/ -v` dari folder proyeknya.
+Proyek yang terdiri dari beberapa berkas/paket (modul 2 sampai 7) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 sampai 7 membutuhkan PostgreSQL berjalan dan berkas `.env`. Proyek modul 5 sampai 7 juga membutuhkan `JWT_SECRET` yang valid. Unit test: `go test ./app/service/ ./helper/ -v` dari folder proyeknya.
 
 ## Author
 
