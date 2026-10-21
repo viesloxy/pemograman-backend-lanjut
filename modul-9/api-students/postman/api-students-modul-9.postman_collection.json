@@ -1,0 +1,189 @@
+{
+	"info": {
+		"name": "api-students Modul 9",
+		"description": "Pengujian Transactions dan Concurrency: penetapan dosen pembimbing dengan transaction dan pengendalian konkurensi.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+		{ "key": "adminToken", "value": "" },
+		{ "key": "accessToken", "value": "" }
+	],
+	"item": [
+		{
+			"name": "1 Setup",
+			"item": [
+				{
+					"name": "Register Dedi (mahasiswa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('dediId', body.data.id);",
+									"    pm.collectionVariables.set('dediToken', body.data ? '' : '');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"name\":\"Vito Aditya\",\"grade\":88,\"password\":\"rahasia123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Register Budi",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241085\",\"name\":\"Budi Pratama\",\"grade\":64,\"password\":\"rahasia456\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Login (dapat token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', body.data.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nim\":\"434241084\",\"password\":\"rahasia123\"}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2 Assign Pembimbing",
+			"item": [
+				{
+					"name": "Assign Vito ke Dedi (admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/supervisors/1/assign",
+							"host": ["{{baseUrl}}"],
+							"path": ["supervisors", "1", "assign"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"student_id\":1}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				},
+				{
+					"name": "Assign Vito lagi (409 sudah terdaftar)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/supervisors/1/assign",
+							"host": ["{{baseUrl}}"],
+							"path": ["supervisors", "1", "assign"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"student_id\":1}",
+							"options": { "raw": { "language": "json" } }
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3 Error Format",
+			"item": [
+				{
+					"name": "GET tanpa token (401)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["students"]
+						}
+					}
+				},
+				{
+					"name": "GET id tidak ada (404)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/students/99999",
+							"host": ["{{baseUrl}}"],
+							"path": ["students", "99999"]
+						}
+					}
+				},
+				{
+					"name": "Health (200)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
