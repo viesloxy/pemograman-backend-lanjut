@@ -13,11 +13,12 @@ import (
 )
 
 type Dependencies struct {
-	Pool           *pgxpool.Pool
-	JWT            *helper.JWTManager
-	Permissions    *helper.PermissionSet
-	StudentService *service.StudentService
-	AuthService    *service.AuthService
+	Pool              *pgxpool.Pool
+	JWT               *helper.JWTManager
+	Permissions       *helper.PermissionSet
+	StudentService    *service.StudentService
+	AuthService       *service.AuthService
+	SupervisorService *service.SupervisorService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
@@ -37,7 +38,6 @@ func Register(app *fiber.App, deps Dependencies) {
 
 	perms := deps.Permissions
 
-	// Hak dapat diputuskan tanpa melihat data, diperiksa di sini.
 	students.Get("/",
 		middleware.RequirePermission(perms, "student:list"),
 		deps.StudentService.List)
@@ -48,10 +48,22 @@ func Register(app *fiber.App, deps Dependencies) {
 		middleware.RequirePermission(perms, "student:delete"),
 		deps.StudentService.Delete)
 
-	// Hak bergantung pada kepemilikan data, diperiksa di service.
 	students.Get("/:id", deps.StudentService.Get)
 	students.Put("/:id", deps.StudentService.Replace)
 	students.Patch("/:id", deps.StudentService.Patch)
+
+	supervisors := api.Group("/supervisors",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT),
+		middleware.RequirePermission(perms, "supervision:manage"))
+	supervisors.Get("/", deps.SupervisorService.List)
+	supervisors.Patch("/:id", deps.SupervisorService.UpdateQuota)
+	supervisors.Post("/:id/assign", deps.SupervisorService.Assign)
+
+	enrollments := api.Group("/enrollments",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT))
+	enrollments.Post("/switch", deps.SupervisorService.Switch)
 }
 
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {

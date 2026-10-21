@@ -45,6 +45,8 @@ func main() {
 	studentRepository := repository.NewStudentRepository(pool)
 	tokenRepository := repository.NewTokenRepository(pool)
 	roleRepository := repository.NewRoleRepository(pool)
+	supervisorRepository := repository.NewSupervisorRepository(pool)
+	txManager := repository.NewTxManager(pool)
 
 	rawPermissions, err := roleRepository.LoadPermissions(context.Background())
 	if err != nil {
@@ -59,13 +61,16 @@ func main() {
 		studentRepository, tokenRepository, jwtManager,
 		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,
 	)
+	supervisorService := service.NewSupervisorService(
+		supervisorRepository, studentRepository, txManager)
 
 	app := config.NewApp(logger, route.Dependencies{
-		Pool:           pool,
-		JWT:            jwtManager,
-		Permissions:    permissions,
-		StudentService: studentService,
-		AuthService:    authService,
+		Pool:              pool,
+		JWT:               jwtManager,
+		Permissions:       permissions,
+		StudentService:    studentService,
+		AuthService:       authService,
+		SupervisorService: supervisorService,
 	})
 	port := config.GetEnv("APP_PORT", "3000")
 

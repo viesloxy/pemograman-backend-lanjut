@@ -31,3 +31,7 @@ type UpdateQuotaRequest struct {
 	Quota   int `json:"quota"   validate:"required,min=1,max=500"`
 	Version int `json:"version" validate:"required,min=1"`
 }
+
+type AssignRequest struct {
+	StudentID int `json:"student_id" validate:"required,min=1"`
+}
