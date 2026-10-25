@@ -26,8 +26,17 @@ var (
 func main() {
 	mode := flag.String("mode", "crowd", "crowd | swap")
 	concurrency := flag.Int("n", 60, "jumlah request serentak")
+	baseID := flag.Int("base", 1, "id student pertama yang dipakai crowd/swap mode")
+	role := flag.String("role", "admin", "role pada token crowd mode")
+	printToken := flag.Bool("print-token", false, "cetak token untuk -base dan -role lalu keluar")
 	flag.StringVar(&jwtSecret, "secret", os.Getenv("JWT_SECRET"), "JWT_SECRET")
 	flag.Parse()
+
+	if *printToken {
+		t := makeToken(*baseID, *role)
+		fmt.Println(t)
+		return
+	}
 
 	if jwtSecret == "" || len(jwtSecret) < 32 {
 		fmt.Println("JWT_SECRET wajib diisi (minimal 32 karakter)")
@@ -38,7 +47,7 @@ func main() {
 	slog.SetDefault(logger)
 	loadtestLog = logger
 
-	token := makeToken(1, "admin")
+	token := makeToken(1, *role)
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	start := time.Now()
@@ -47,13 +56,23 @@ func main() {
 	switch *mode {
 	case "crowd":
 		results = fire(*concurrency, func(i int) string {
-			return enroll(client, token, 1, i+100)
+			return enroll(client, token, 1, *baseID+i)
 		})
 	case "swap":
+		// Tahap 0: bagilah mahasiswa rata ke dua pembimbing, bergiliran.
+		// Penugasan dijaga permission supervision:manage, jadi memakai
+		// token admin. Kuota kedua pembimbing harus cukup untuk n/2.
+		for i := 0; i < *concurrency; i++ {
+			sup := 1 + i%2
+			enroll(client, token, sup, *baseID+i)
+		}
+		// Tahap 1: seluruh mahasiswa pindah berlawanan arah serentak.
+		// Setiap mahasiswa membawa token sendiri supaya yang diuji
+		// adalah pindah kelas oleh banyak orang, bukan satu orang.
 		results = fire(*concurrency, func(i int) string {
 			from := 1 + i%2
 			to := 2 - i%2
-			return swapSupervisor(client, token, from, to)
+			return swapSupervisor(client, makeToken(*baseID+i, "user"), from, to)
 		})
 	default:
 		fmt.Println("mode tidak dikenal:", *mode)

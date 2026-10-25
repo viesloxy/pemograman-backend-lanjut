@@ -56,6 +56,14 @@ func Conflict(message string) *AppError {
 	return &AppError{Status: fiber.StatusConflict, Code: CodeConflict, Message: message}
 }
 
+// NewError dipakai bila sebuah kegagalan butuh kode yang lebih spesifik
+// daripada kode umum di atas — misalnya SUPERVISOR_FULL alih-alih CONFLICT.
+// Client dapat menampilkan pesan berbeda untuk "kuota penuh" dan "sudah
+// memiliki pembimbing", padahal keduanya sama-sama 409.
+func NewError(status int, code, message string) *AppError {
+	return &AppError{Status: status, Code: code, Message: message}
+}
+
 func Validation(fields map[string]string) *AppError {
 	return &AppError{
 		Status: fiber.StatusUnprocessableEntity, Code: CodeValidation,

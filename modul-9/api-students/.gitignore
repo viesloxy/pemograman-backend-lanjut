@@ -14,3 +14,6 @@ logs/
 .vscode/
 .DS_Store
 # berkas sisa build\*.exe~
+
+# binary hasil kompilasi di semua subfolder
+*.exe

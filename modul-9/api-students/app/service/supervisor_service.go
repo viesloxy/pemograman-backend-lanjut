@@ -65,31 +65,36 @@ func (s *SupervisorService) Assign(c *fiber.Ctx) error {
 	err := s.tx.WithTx(ctx, func(tx repository.DBTX) error {
 		repo := s.supervisors.WithTx(tx)
 
+		// 1. Kunci baris mahasiswa (gembok KRS). Request lain untuk
+		//    mahasiswa YANG SAMA harus menunggu sampai transaction ini
+		//    selesai — satu mahasiswa tidak mungkin ditetapkan ke dua
+		//    pembimbing secara serentak.
 		if err := repo.LockStudent(ctx, req.StudentID); err != nil {
 			return err
 		}
 
-		supervisor, err := repo.FindByID(ctx, supervisorID)
-		if err != nil {
-			return err
-		}
-		count, err := repo.CountBySupervisor(ctx, supervisorID)
-		if err != nil {
-			return err
-		}
-		if !WithinQuotaLimit(count, supervisor.Quota) {
-			return helper.Conflict("kuota pembimbing sudah penuh")
-		}
-
-		if err := repo.AssignSupervisor(ctx, supervisorID, req.StudentID); err != nil {
+		// 2. Kunci baris pembimbing dalam urutan id menaik sebelum
+		//    menyentuh kuotanya, agar tidak ada pembacaan yang basi.
+		if err := repo.LockSupervisors(ctx, supervisorID); err != nil {
 			return err
 		}
 
-		assigned = supervisor
-		return nil
+		// 3. Ambil satu kursi bimbingan secara atomik: pemeriksaan
+		//    "supervised_count < quota" dan penambahannya terjadi dalam
+		//    satu pernyataan UPDATE. Tidak ada celah check-then-act.
+		sup, err := repo.IncrementSupervised(ctx, supervisorID)
+		if err != nil {
+			return err
+		}
+		assigned = sup
+
+		// 4. Catat penetapannya. Bila mahasiswa ternyata sudah punya
+		//    pembimbing (UNIQUE student_id), error di sini membatalkan
+		//    juga penambahan kursi pada langkah 3 — itulah atomicity.
+		return repo.AssignSupervisor(ctx, supervisorID, req.StudentID)
 	})
 	if err != nil {
-		return err
+		return translateSupervisorError(err)
 	}
 
 	return helper.Created(c, "pembimbing berhasil ditetapkan", assigned,
@@ -123,33 +128,36 @@ func (s *SupervisorService) Switch(c *fiber.Ctx) error {
 			return err
 		}
 
+		// Kunci KEDUA pembimbing lebih dulu, dalam urutan id menaik.
+		// Tanpa urutan yang seragam, pindah A -> B dan B -> A pada saat
+		// yang sama saling menunggu kunci: deadlock (Bagian A.6).
 		if err := repo.LockSupervisors(ctx, req.FromSupervisorID, req.ToSupervisorID); err != nil {
 			return err
 		}
 
+		// Pastikan mahasiswa memang ada di pembimbing asal.
 		if err := repo.FindSupervision(ctx, req.FromSupervisorID, current.StudentID); err != nil {
 			return err
 		}
 
-		target, err := repo.FindByID(ctx, req.ToSupervisorID)
-		if err != nil {
+		// Keluar dari pembimbing lama.
+		if err := repo.DeleteSupervision(ctx, req.FromSupervisorID, current.StudentID); err != nil {
 			return err
 		}
-		count, err := repo.CountBySupervisor(ctx, req.ToSupervisorID)
-		if err != nil {
+		if _, err := repo.DecrementSupervised(ctx, req.FromSupervisorID); err != nil {
 			return err
-		}
-		if !WithinQuotaLimit(count, target.Quota) {
-			return helper.Conflict("kuota pembimbing sudah penuh")
 		}
 
-		if err := repo.DeleteSupervision(ctx, req.FromSupervisorID, current.StudentID); err != nil {
+		// Masuk ke pembimbing baru secara atomik. Bila kuotanya penuh,
+		// error di sini me-ROLLBACK seluruh transaction — mahasiswa
+		// tetap berada di pembimbing lamanya.
+		if _, err := repo.IncrementSupervised(ctx, req.ToSupervisorID); err != nil {
 			return err
 		}
 		return repo.AssignSupervisor(ctx, req.ToSupervisorID, current.StudentID)
 	})
 	if err != nil {
-		return err
+		return translateSupervisorError(err)
 	}
 
 	return helper.Success(c, fiber.StatusOK, "pembimbing berhasil diganti", nil)
@@ -182,11 +190,17 @@ func (s *SupervisorService) UpdateQuota(c *fiber.Ctx) error {
 func translateSupervisorError(err error) error {
 	switch {
 	case errors.Is(err, repository.ErrNotFound):
-		return helper.NotFound("pembimbing tidak ditemukan")
+		return helper.NotFound("pembimbing atau mahasiswa tidak ditemukan")
+	case errors.Is(err, repository.ErrSupervisorFull):
+		return helper.NewError(fiber.StatusConflict, "SUPERVISOR_FULL", "kuota pembimbing sudah penuh")
+	case errors.Is(err, repository.ErrDuplicate):
+		return helper.NewError(fiber.StatusConflict, "ALREADY_SUPERVISED", "mahasiswa sudah memiliki pembimbing")
+	case errors.Is(err, repository.ErrNotEnrolled):
+		return helper.NewError(fiber.StatusConflict, "NOT_SUPERVISED", "tidak terdaftar pada pembimbing tersebut")
 	case errors.Is(err, repository.ErrVersionConflict):
-		return helper.Conflict("data sudah diubah pihak lain, muat ulang lalu coba lagi")
+		return helper.NewError(fiber.StatusConflict, "VERSION_CONFLICT", "data sudah diubah pihak lain, muat ulang lalu coba lagi")
 	case errors.Is(err, repository.ErrQuotaBelowFilled):
-		return helper.Conflict("kuota tidak boleh lebih kecil dari jumlah mahasiswa saat ini")
+		return helper.NewError(fiber.StatusConflict, "QUOTA_BELOW_SUPERVISED", "kuota tidak boleh lebih kecil dari jumlah mahasiswa bimbingan saat ini")
 	default:
 		return helper.Internal(err)
 	}

@@ -12,6 +12,7 @@ import (
 
 var (
 	ErrCourseFull       = errors.New("kuota sudah penuh")
+	ErrSupervisorFull   = errors.New("kuota pembimbing sudah penuh")
 	ErrNotEnrolled      = errors.New("tidak terdaftar")
 	ErrVersionConflict  = errors.New("data sudah diubah pihak lain")
 	ErrQuotaBelowFilled = errors.New("kuota lebih kecil dari jumlah mahasiswa")
@@ -25,7 +26,8 @@ type SupervisorRepository interface {
 	UpdateQuota(ctx context.Context, id, quota, version int) (model.Supervisor, error)
 	LockStudent(ctx context.Context, studentID int) error
 	LockSupervisors(ctx context.Context, ids ...int) error
-	CountBySupervisor(ctx context.Context, supervisorID int) (int, error)
+	IncrementSupervised(ctx context.Context, supervisorID int) (model.Supervisor, error)
+	DecrementSupervised(ctx context.Context, supervisorID int) (model.Supervisor, error)
 	FindSupervision(ctx context.Context, supervisorID, studentID int) error
 	AssignSupervisor(ctx context.Context, supervisorID, studentID int) error
 	DeleteSupervision(ctx context.Context, supervisorID, studentID int) error
@@ -84,7 +86,7 @@ func (r *supervisorRepository) FindByID(ctx context.Context, id int) (model.Supe
 
 func (r *supervisorRepository) UpdateQuota(ctx context.Context, id, quota, version int) (model.Supervisor, error) {
 	s, err := scanSupervisor(r.db.QueryRow(ctx,
-		`UPDATE supervisors SET quota = $1
+		`UPDATE supervisors SET quota = $1, version = version + 1
 		 WHERE id = $2 AND version = $3 AND $1 >= supervised_count
 		 RETURNING id, name, quota, supervised_count, version, created_at`,
 		quota, id, version))
@@ -139,14 +141,48 @@ func (r *supervisorRepository) LockSupervisors(ctx context.Context, ids ...int) 
 	return nil
 }
 
-func (r *supervisorRepository) CountBySupervisor(ctx context.Context, supervisorID int) (int, error) {
-	var count int
-	err := r.db.QueryRow(ctx,
-		"SELECT COUNT(*) FROM supervisions WHERE supervisor_id = $1", supervisorID).Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("menghitung mahasiswa bimbingan: %w", err)
+// IncrementSupervised mengambil satu kursi bimbingan secara ATOMIK.
+//
+// Pemeriksaan kuota dan penambahan jumlah bimbingan terjadi dalam satu
+// pernyataan UPDATE (teknik UPDATE bersyarat, Bagian A.4 cara 1).
+// PostgreSQL mengunci row tersebut selama UPDATE berjalan, sehingga
+// dua penetapan yang datang bersamaan tidak mungkin sama-sama melihat
+// "masih ada kursi".
+func (r *supervisorRepository) IncrementSupervised(ctx context.Context, supervisorID int) (model.Supervisor, error) {
+	s, err := scanSupervisor(r.db.QueryRow(ctx,
+		`UPDATE supervisors SET supervised_count = supervised_count + 1
+		 WHERE id = $1 AND supervised_count < quota
+		 RETURNING id, name, quota, supervised_count, version, created_at`, supervisorID))
+	if err == nil {
+		return s, nil
 	}
-	return count, nil
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return model.Supervisor{}, fmt.Errorf("menambah mahasiswa bimbingan: %w", err)
+	}
+
+	// Tidak ada row yang berubah. Dua kemungkinan: pembimbingnya tidak ada,
+	// atau pembimbingnya ada tetapi sudah penuh. Bedakan keduanya.
+	if _, findErr := r.FindByID(ctx, supervisorID); findErr != nil {
+		return model.Supervisor{}, findErr
+	}
+	return model.Supervisor{}, ErrSupervisorFull
+}
+
+// DecrementSupervised melepas satu kursi bimbingan, selalu sebagai
+// pasangan DeleteSupervision di dalam transaction yang sama. Bila
+// penugasan baru ternyata gagal, ROLLBACK mengembalikan nilai ini.
+func (r *supervisorRepository) DecrementSupervised(ctx context.Context, supervisorID int) (model.Supervisor, error) {
+	s, err := scanSupervisor(r.db.QueryRow(ctx,
+		`UPDATE supervisors SET supervised_count = supervised_count - 1
+		 WHERE id = $1
+		 RETURNING id, name, quota, supervised_count, version, created_at`, supervisorID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.Supervisor{}, ErrNotFound
+		}
+		return model.Supervisor{}, fmt.Errorf("mengurangi mahasiswa bimbingan: %w", err)
+	}
+	return s, nil
 }
 
 func (r *supervisorRepository) FindSupervision(ctx context.Context, supervisorID, studentID int) error {
