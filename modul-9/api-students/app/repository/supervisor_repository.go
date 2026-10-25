@@ -110,7 +110,7 @@ func (r *supervisorRepository) UpdateQuota(ctx context.Context, id, quota, versi
 func (r *supervisorRepository) LockStudent(ctx context.Context, studentID int) error {
 	var id int
 	err := r.db.QueryRow(ctx,
-		"SELECT id FROM students WHERE id = $1", studentID).Scan(&id)
+		"SELECT id FROM students WHERE id = $1 FOR UPDATE", studentID).Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNotFound
