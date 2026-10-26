@@ -62,6 +62,13 @@ func main() {
 	supervisorRepository := repository.NewSupervisorRepository(pool)
 	txManager := repository.NewTxManager(pool)
 
+	mongoDB := mongoClient.Database(config.GetEnv("MONGO_DATABASE", "praktikum_backend"))
+	reviewRepository := repository.NewReviewRepository(mongoDB)
+	if err := reviewRepository.EnsureIndexes(context.Background()); err != nil {
+		logger.Error("gagal menyiapkan index ulasan", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
 	rawPermissions, err := roleRepository.LoadPermissions(context.Background())
 	if err != nil {
 		logger.Error("gagal memuat permission", slog.String("error", err.Error()))
