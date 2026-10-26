@@ -382,8 +382,75 @@ func (r *reviewMongoRepository) MarkHelpful(ctx context.Context, id string, user
 	return model.Review{}, ErrAlreadyVoted
 }
 
+// Summary meringkas seluruh ulasan satu kelas dengan aggregation pipeline.
+//
+// $facet menjalankan beberapa pipeline kecil atas data yang SAMA dalam satu
+// perjalanan ke database: statistik umum, sebaran bintang, dan tag terpopuler.
 func (r *reviewMongoRepository) Summary(ctx context.Context, courseID int) (model.ReviewSummary, error) {
-	return model.ReviewSummary{}, errBelumDiimplementasi
-}
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"course_id": courseID}}},
+		{{Key: "$facet", Value: bson.M{
+			"stats": bson.A{
+				bson.M{"$group": bson.M{
+					"_id":   nil,
+					"count": bson.M{"$sum": 1},
+					"avg":   bson.M{"$avg": "$rating"},
+				}},
+			},
+			"distribution": bson.A{
+				bson.M{"$group": bson.M{"_id": "$rating", "total": bson.M{"$sum": 1}}},
+			},
+			"top_tags": bson.A{
+				bson.M{"$unwind": "$tags"},
+				bson.M{"$group": bson.M{"_id": "$tags", "total": bson.M{"$sum": 1}}},
+				bson.M{"$sort": bson.D{{Key: "total", Value: -1}, {Key: "_id", Value: 1}}},
+				bson.M{"$limit": 5},
+			},
+		}}},
+	}
 
-var errBelumDiimplementasi = errors.New("belum diimplementasi")
+	cursor, err := r.coll.Aggregate(ctx, pipeline)
+	if err != nil {
+		return model.ReviewSummary{}, fmt.Errorf("meringkas ulasan: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var out []struct {
+		Stats []struct {
+			Count int     `bson:"count"`
+			Avg   float64 `bson:"avg"`
+		} `bson:"stats"`
+		Distribution []struct {
+			Rating int `bson:"_id"`
+			Total  int `bson:"total"`
+		} `bson:"distribution"`
+		TopTags []struct {
+			Tag   string `bson:"_id"`
+			Total int    `bson:"total"`
+		} `bson:"top_tags"`
+	}
+	if err := cursor.All(ctx, &out); err != nil {
+		return model.ReviewSummary{}, fmt.Errorf("membaca ringkasan: %w", err)
+	}
+
+	summary := model.ReviewSummary{
+		CourseID:     courseID,
+		Distribution: map[string]int{"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
+		TopTags:      []model.TagCount{},
+	}
+	if len(out) == 0 {
+		return summary, nil
+	}
+	if len(out[0].Stats) > 0 {
+		summary.Count = out[0].Stats[0].Count
+		// Dibulatkan dua angka di belakang koma agar mudah dibaca.
+		summary.AverageRating = float64(int(out[0].Stats[0].Avg*100+0.5)) / 100
+	}
+	for _, d := range out[0].Distribution {
+		summary.Distribution[strconv.Itoa(d.Rating)] = d.Total
+	}
+	for _, t := range out[0].TopTags {
+		summary.TopTags = append(summary.TopTags, model.TagCount{Tag: t.Tag, Total: t.Total})
+	}
+	return summary, nil
+}
