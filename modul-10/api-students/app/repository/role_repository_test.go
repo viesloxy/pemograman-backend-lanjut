@@ -32,8 +32,8 @@ func TestLoadPermissions(t *testing.T) {
 	if len(raw) != 3 {
 		t.Fatalf("harusnya 3 role, dapat %d: %v", len(raw), raw)
 	}
-	if len(raw["admin"]) != 7 {
-		t.Errorf("admin harusnya 7 permission, dapat %v", raw["admin"])
+	if len(raw["admin"]) != 8 {
+		t.Errorf("admin harusnya 8 permission, dapat %v", raw["admin"])
 	}
 	if len(raw["staff"]) != 3 {
 		t.Errorf("staff harusnya 3 permission, dapat %v", raw["staff"])
@@ -44,8 +44,9 @@ func TestLoadPermissions(t *testing.T) {
 
 	perms := raw["admin"]
 	sort.Strings(perms)
-	want := []string{"course:manage", "student:create", "student:delete",
-		"student:list", "student:read:any", "student:update:any", "supervision:manage"}
+	want := []string{"course:manage", "review:moderate", "student:create",
+		"student:delete", "student:list", "student:read:any", "student:update:any",
+		"supervision:manage"}
 	if !equal(perms, want) {
 		t.Errorf("isi permission admin berbeda: %v", perms)
 	}
