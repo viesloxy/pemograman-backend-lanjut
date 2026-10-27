@@ -1,0 +1,223 @@
+{
+	"info": {
+		"_postman_id": "b7e2f1a0-4c10-4d5a-9f31-mod10collect",
+		"name": "api-students-modul-10",
+		"description": "Ulasan kelas (MongoDB) + portofolio mahasiswa. Praktikum Pemrograman Backend Lanjut — Modul 10. Set variabel baseUrl = http://localhost:3000/api/v1.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+		{ "key": "token", "value": "" },
+		{ "key": "tokenAdmin", "value": "" },
+		{ "key": "reviewId", "value": "" }
+	],
+	"item": [
+		{
+			"name": "1 Setup",
+			"item": [
+				{
+					"name": "Register Vito",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\"nim\":\"434241084\",\"name\":\"Vito\",\"grade\":88,\"password\":\"rahasia123\"}" },
+						"url": "{{baseUrl}}/auth/register"
+					}
+				},
+				{
+					"name": "Register Budi",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\"nim\":\"434241085\",\"name\":\"Budi\",\"grade\":64,\"password\":\"rahasia456\"}" },
+						"url": "{{baseUrl}}/auth/register"
+					}
+				},
+				{
+					"name": "Login Vito (token)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\"nim\":\"434241084\",\"password\":\"rahasia123\"}" },
+						"url": "{{baseUrl}}/auth/login"
+					}
+				},
+				{
+					"name": "Health (dua database)",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/health"
+					}
+				}
+			]
+		},
+		{
+			"name": "2 Ulasan Kelas",
+			"item": [
+				{
+					"name": "Tulis ulasan IF101",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":4,\"comment\":\"Materi Go-nya jelas, tugasnya cukup banyak\",\"tags\":[\"Tugas-Banyak\",\" dosen-jelas \",\"tugas-banyak\"]}" },
+						"url": "{{baseUrl}}/courses/1/reviews",
+						"description": "Tags diacak sengaja: tersimpan ternormalisasi [tugas-banyak, dosen-jelas]."
+					}
+				},
+				{
+					"name": "Ulasan kedua di kelas sama (409)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Masih suka dengan kelasnya kok, santai saja\"}" },
+						"url": "{{baseUrl}}/courses/1/reviews"
+					}
+				},
+				{
+					"name": "Daftar ulasan IF101",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/courses/1/reviews?limit=10"
+					}
+				},
+				{
+					"name": "Filter tag praktikal",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/courses/1/reviews?tag=praktikal"
+					}
+				},
+				{
+					"name": "Ringkasan ulasan IF101",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/courses/1/reviews/summary"
+					}
+				},
+				{
+					"name": "Ubah ulasan sendiri",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Materi Go-nya jelas, tugasnya cukup banyak dan membantu\"}" },
+						"url": "{{baseUrl}}/reviews/{{reviewId}}"
+					}
+				},
+				{
+					"name": "Balas ulasan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"body\":\"Setuju, tugasnya memang banyak\"}" },
+						"url": "{{baseUrl}}/reviews/{{reviewId}}/replies"
+					}
+				},
+				{
+					"name": "Tandai membantu",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{baseUrl}}/reviews/{{reviewId}}/helpful"
+					}
+				}
+			]
+		},
+		{
+			"name": "3 Negatif dan Edge",
+			"item": [
+				{
+					"name": "Tulis tanpa terdaftar (403 NOT_ENROLLED)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Komen dari luar kelas, seharusnya ditolak\"}" },
+						"url": "{{baseUrl}}/courses/1/reviews"
+					}
+				},
+				{
+					"name": "Rating 9, komentar pendek, 6 tag (422)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":9,\"comment\":\"pendek\",\"tags\":[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\"]}" },
+						"url": "{{baseUrl}}/courses/1/reviews"
+					}
+				},
+				{
+					"name": "Operator di body (400, NoSQL injection)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":4,\"comment\":{\"$ne\":\"\"}}" },
+						"url": "{{baseUrl}}/courses/1/reviews"
+					}
+				},
+				{
+					"name": "Operator di query tag (200, 0 hasil)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/courses/1/reviews",
+						"query": [{ "key": "tag", "value": "{\"$ne\":\"\"}" }]
+					}
+				},
+				{
+					"name": "ID ulasan rusak (400)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/reviews/bukan-objectid"
+					}
+				},
+				{
+					"name": "PATCH ulasan orang lain (403)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":1,\"comment\":\"coba mengubah ulasan orang lain ya\"}" },
+						"url": "{{baseUrl}}/reviews/{{reviewId}}"
+					}
+				},
+				{
+					"name": "Hapus ulasan admin (204)",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+						"url": "{{baseUrl}}/reviews/{{reviewId}}"
+					}
+				}
+			]
+		}
+	]
+}
