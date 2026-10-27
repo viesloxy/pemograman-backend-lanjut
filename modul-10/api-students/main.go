@@ -60,6 +60,7 @@ func main() {
 	tokenRepository := repository.NewTokenRepository(pool)
 	roleRepository := repository.NewRoleRepository(pool)
 	supervisorRepository := repository.NewSupervisorRepository(pool)
+	courseRepository := repository.NewCourseRepository(pool)
 	txManager := repository.NewTxManager(pool)
 
 	mongoDB := mongoClient.Database(config.GetEnv("MONGO_DATABASE", "praktikum_backend"))
@@ -84,6 +85,7 @@ func main() {
 	)
 	supervisorService := service.NewSupervisorService(
 		supervisorRepository, studentRepository, txManager)
+	reviewService := service.NewReviewService(reviewRepository, courseRepository, permissions)
 
 	app := config.NewApp(logger, route.Dependencies{
 		Pool:              pool,
@@ -93,6 +95,7 @@ func main() {
 		StudentService:    studentService,
 		AuthService:       authService,
 		SupervisorService: supervisorService,
+		ReviewService:     reviewService,
 	})
 	port := config.GetEnv("APP_PORT", "3000")
 
