@@ -1,19 +1,22 @@
 {
 	"info": {
-		"_postman_id": "b7e2f1a0-4c10-4d5a-9f31-mod10collect",
+		"_postman_id": "b7e2f1a0-4c10-4d5a-9f31-mod10collect2",
 		"name": "api-students-modul-10",
-		"description": "Ulasan kelas (MongoDB) + portofolio mahasiswa. Praktikum Pemrograman Backend Lanjut — Modul 10. Set variabel baseUrl = http://localhost:3000/api/v1.",
+		"description": "Ulasan kelas (MongoDB) dan portofolio mahasiswa. Praktikum Pemrograman Backend Lanjut, Modul 10.\n\nCara pakai: jalankan folder 1 berurutan (token tersimpan otomatis), lalu folder berikutnya sesuai urutan. Permintaan serentak (uji beban) tetap memakai alat uji di terminal; lihat Panduan_Screenshot.md.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
 		{ "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
 		{ "key": "token", "value": "" },
+		{ "key": "tokenBudi", "value": "" },
 		{ "key": "tokenAdmin", "value": "" },
-		{ "key": "reviewId", "value": "" }
+		{ "key": "tokenRina", "value": "" },
+		{ "key": "reviewId", "value": "" },
+		{ "key": "projectId", "value": "" }
 	],
 	"item": [
 		{
-			"name": "1 Setup",
+			"name": "1 Setup Akun (publik)",
 			"item": [
 				{
 					"name": "Register Vito",
@@ -34,11 +37,103 @@
 					}
 				},
 				{
-					"name": "Login Vito (token)",
+					"name": "Register Rina (tidak terdaftar kelas)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\"nim\":\"434241086\",\"name\":\"Rina\",\"grade\":70,\"password\":\"rahasia789\"}" },
+						"url": "{{baseUrl}}/auth/register"
+					}
+				},
+				{
+					"name": "Login Vito (token tersimpan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('token', body.data.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": { "mode": "raw", "raw": "{\"nim\":\"434241084\",\"password\":\"rahasia123\"}" },
+						"url": "{{baseUrl}}/auth/login"
+					}
+				},
+				{
+					"name": "Login Budi (token tersimpan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('tokenBudi', body.data.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\"nim\":\"434241085\",\"password\":\"rahasia456\"}" },
+						"url": "{{baseUrl}}/auth/login"
+					}
+				},
+				{
+					"name": "Login Rina (token tersimpan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('tokenRina', body.data.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\"nim\":\"434241086\",\"password\":\"rahasia789\"}" },
+						"url": "{{baseUrl}}/auth/login"
+					}
+				},
+				{
+					"name": "Login Admin (token tersimpan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('tokenAdmin', body.data.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\"nim\":\"24110000001\",\"password\":\"RahasiaKuat#2026\"}" },
 						"url": "{{baseUrl}}/auth/login"
 					}
 				},
@@ -52,10 +147,39 @@
 			]
 		},
 		{
-			"name": "2 Ulasan Kelas",
+			"name": "2 Daftar Kelas (jalankan psql, bukan Postman)",
+			"description": "Daftarkan Vito dan Budi ke kelas IF101 lewat psql:\n\npsql -U postgres -d praktikum_backend -c \"INSERT INTO enrollments (course_id, student_id) SELECT 1, id FROM students WHERE nim IN ('434241084','434241085') ON CONFLICT DO NOTHING;\"\n\nRina sengaja TIDAK didaftarkan untuk uji 403 NOT_ENROLLED.",
 			"item": [
 				{
-					"name": "Tulis ulasan IF101",
+					"name": "Cek pendaftaran (psql di luar Postman)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/health",
+						"description": "Pengingat saja: jalankan perintah psql pada deskripsi folder sebelum lanjut."
+					}
+				}
+			]
+		},
+		{
+			"name": "3 Ulasan Kelas",
+			"item": [
+				{
+					"name": "Tulis ulasan IF101 (Vito, 201, reviewId tersimpan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    pm.collectionVariables.set('reviewId', body.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -68,7 +192,7 @@
 					}
 				},
 				{
-					"name": "Ulasan kedua di kelas sama (409)",
+					"name": "Ulasan kedua di kelas sama (409 ALREADY_REVIEWED)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -76,6 +200,18 @@
 							{ "key": "Authorization", "value": "Bearer {{token}}" }
 						],
 						"body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Masih suka dengan kelasnya kok, santai saja\"}" },
+						"url": "{{baseUrl}}/courses/1/reviews"
+					}
+				},
+				{
+					"name": "Tulis ulasan IF101 (Budi, 201)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{tokenBudi}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Penjelasan dosen mudah diikuti dari awal\",\"tags\":[\"dosen-jelas\",\"praktikal\"]}" },
 						"url": "{{baseUrl}}/courses/1/reviews"
 					}
 				},
@@ -104,7 +240,7 @@
 					}
 				},
 				{
-					"name": "Ubah ulasan sendiri",
+					"name": "Ubah ulasan sendiri (200)",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -116,19 +252,31 @@
 					}
 				},
 				{
-					"name": "Balas ulasan",
+					"name": "PATCH ulasan milik orang lain (403)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{tokenBudi}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":1,\"comment\":\"coba mengubah ulasan orang lain ya\"}" },
+						"url": "{{baseUrl}}/reviews/{{reviewId}}"
+					}
+				},
+				{
+					"name": "Balas ulasan (201)",
 					"request": {
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" },
-							{ "key": "Authorization", "value": "Bearer {{token}}" }
+							{ "key": "Authorization", "value": "Bearer {{tokenBudi}}" }
 						],
 						"body": { "mode": "raw", "raw": "{\"body\":\"Setuju, tugasnya memang banyak\"}" },
 						"url": "{{baseUrl}}/reviews/{{reviewId}}/replies"
 					}
 				},
 				{
-					"name": "Tandai membantu",
+					"name": "Helpful ulasan sendiri (409 OWN_REVIEW)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -138,19 +286,43 @@
 						"body": { "mode": "raw", "raw": "{}" },
 						"url": "{{baseUrl}}/reviews/{{reviewId}}/helpful"
 					}
-				}
-			]
-		},
-		{
-			"name": "3 Negatif dan Edge",
-			"item": [
+				},
 				{
-					"name": "Tulis tanpa terdaftar (403 NOT_ENROLLED)",
+					"name": "Helpful oleh Budi (200, count naik)",
 					"request": {
 						"method": "POST",
 						"header": [
 							{ "key": "Content-Type", "value": "application/json" },
-							{ "key": "Authorization", "value": "Bearer {{token}}" }
+							{ "key": "Authorization", "value": "Bearer {{tokenBudi}}" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{baseUrl}}/reviews/{{reviewId}}/helpful"
+					}
+				},
+				{
+					"name": "Helpful Budi diulang (409 ALREADY_VOTED)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{tokenBudi}}" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{baseUrl}}/reviews/{{reviewId}}/helpful"
+					}
+				}
+			]
+		},
+		{
+			"name": "4 Negatif dan Edge",
+			"item": [
+				{
+					"name": "Tulis tanpa terdaftar, Rina (403 NOT_ENROLLED)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{tokenRina}}" }
 						],
 						"body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Komen dari luar kelas, seharusnya ditolak\"}" },
 						"url": "{{baseUrl}}/courses/1/reviews"
@@ -166,6 +338,26 @@
 						],
 						"body": { "mode": "raw", "raw": "{\"rating\":9,\"comment\":\"pendek\",\"tags\":[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\"]}" },
 						"url": "{{baseUrl}}/courses/1/reviews"
+					}
+				},
+				{
+					"name": "Kelas 99999 (404)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"rating\":4,\"comment\":\"Kelas ini tidak pernah ada sebelumnya\"}" },
+						"url": "{{baseUrl}}/courses/99999/reviews"
+					}
+				},
+				{
+					"name": "ID ulasan rusak (400)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/reviews/bukan-objectid"
 					}
 				},
 				{
@@ -190,31 +382,119 @@
 					}
 				},
 				{
-					"name": "ID ulasan rusak (400)",
+					"name": "Bukan pemilik menghapus (403)",
 					"request": {
-						"method": "GET",
-						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-						"url": "{{baseUrl}}/reviews/bukan-objectid"
-					}
-				},
-				{
-					"name": "PATCH ulasan orang lain (403)",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{ "key": "Content-Type", "value": "application/json" },
-							{ "key": "Authorization", "value": "Bearer {{token}}" }
-						],
-						"body": { "mode": "raw", "raw": "{\"rating\":1,\"comment\":\"coba mengubah ulasan orang lain ya\"}" },
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{tokenBudi}}" }],
 						"url": "{{baseUrl}}/reviews/{{reviewId}}"
 					}
 				},
 				{
-					"name": "Hapus ulasan admin (204)",
+					"name": "Admin menghapus (204)",
 					"request": {
 						"method": "DELETE",
 						"header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
 						"url": "{{baseUrl}}/reviews/{{reviewId}}"
+					},
+					"description": "Menjalankan paling akhir dari folder ini: ulasan Vito terhapus, jalankan ulang Tulis ulasan bila perlu melanjutkan uji."
+				}
+			]
+		},
+		{
+			"name": "5 Portofolio",
+			"item": [
+				{
+					"name": "GET portofolio sebelum dibuat (404 PORTFOLIO_NOT_FOUND)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/students/62/portfolio"
+					}
+				},
+				{
+					"name": "PUT portofolio milik orang lain (403)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{tokenBudi}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"headline\":\"x\",\"bio\":\"y\"}" },
+						"url": "{{baseUrl}}/students/62/portfolio"
+					}
+				},
+				{
+					"name": "Mahasiswa 99999 tidak ada (404)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/students/99999/portfolio"
+					}
+				},
+				{
+					"name": "PUT portofolio sendiri (200)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"headline\":\"Backend developer Go\",\"bio\":\"Mahasiswa D4 TI yang menyukai backend dan basis data\",\"projects\":[{\"title\":\"API Students\",\"technologies\":[\"Go\",\"PostgreSQL\",\"Fiber\"],\"link\":\"https://github.com/viesloxy/pemograman-backend-lanjut\",\"year\":2026}],\"certificates\":[{\"name\":\"Belajar Go\",\"issuer\":\"Dicoding\",\"issued_at\":\"2025-06\"}]}" },
+						"url": "{{baseUrl}}/students/62/portfolio"
+					}
+				},
+				{
+					"name": "POST proyek (201, projectId tersimpan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const d = pm.response.json().data;",
+									"    pm.collectionVariables.set('projectId', d.projects[d.projects.length - 1].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"title\":\"Siakad Mini\",\"technologies\":[\"Go\",\"PostgreSQL\"],\"link\":\"https://github.com/viesloxy\",\"year\":2025}" },
+						"url": "{{baseUrl}}/students/62/portfolio/projects"
+					}
+				},
+				{
+					"name": "DELETE proyek (200)",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/students/62/portfolio/projects/{{projectId}}"
+					}
+				},
+				{
+					"name": "Injection headline (400)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\"headline\":{\"$ne\":\"\"},\"bio\":\"x\"}" },
+						"url": "{{baseUrl}}/students/62/portfolio"
+					}
+				},
+				{
+					"name": "Stats teknologi (aggregation)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/portfolios/stats/technologies"
 					}
 				}
 			]
