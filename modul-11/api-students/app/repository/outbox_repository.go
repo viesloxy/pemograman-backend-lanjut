@@ -99,7 +99,7 @@ func (r *outboxPostgresRepository) Stats(ctx context.Context) (int, int, time.Du
 		SELECT
 			COUNT(*) FILTER (WHERE published_at IS NULL),
 			COUNT(*) FILTER (WHERE published_at IS NOT NULL),
-			COALESCE(EXTRACT(EPOCH FROM NOW() - MIN(created_at)) FILTER (WHERE published_at IS NULL), 0)
+			COALESCE(EXTRACT(EPOCH FROM NOW() - MIN(created_at) FILTER (WHERE published_at IS NULL)), 0)
 		FROM outbox`).Scan(&pending, &published, &oldestSeconds)
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("menghitung outbox: %w", err)
