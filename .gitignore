@@ -5,3 +5,6 @@ docs
 latihan
 UTS TEORI
 UTS\docs
+
+# berkas cadangan editor\*.exe~
+*.exe~
