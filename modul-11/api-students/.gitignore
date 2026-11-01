@@ -17,3 +17,6 @@ logs/
 
 # binary hasil kompilasi di semua subfolder
 *.exe
+
+# token uji lokal modul 11
+tokens-*.txt
