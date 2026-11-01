@@ -61,6 +61,7 @@ func main() {
 	roleRepository := repository.NewRoleRepository(pool)
 	supervisorRepository := repository.NewSupervisorRepository(pool)
 	courseRepository := repository.NewCourseRepository(pool)
+	outboxRepository := repository.NewOutboxRepository(pool)
 	txManager := repository.NewTxManager(pool)
 	mongoDB := mongoClient.Database(config.GetEnv("MONGO_DATABASE", "praktikum_backend"))
 	reviewRepository := repository.NewReviewRepository(mongoDB)
@@ -89,7 +90,7 @@ func main() {
 	)
 	supervisorService := service.NewSupervisorService(
 		supervisorRepository, studentRepository, txManager)
-	courseService := service.NewCourseService(courseRepository, txManager)
+	courseService := service.NewCourseService(courseRepository, outboxRepository, txManager)
 	reviewService := service.NewReviewService(reviewRepository, courseRepository, permissions)
 	portfolioService := service.NewPortfolioService(portfolioRepository, studentRepository)
 

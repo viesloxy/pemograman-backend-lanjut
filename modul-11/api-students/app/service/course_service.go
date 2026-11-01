@@ -16,14 +16,16 @@ import (
 // mencatat pendaftaran harus terjadi bersama-sama atau batal bersama-sama.
 type CourseService struct {
 	courses repository.CourseRepository
+	outbox  repository.OutboxRepository
 	tx      *repository.TxManager
 }
 
 func NewCourseService(
 	courses repository.CourseRepository,
+	outbox repository.OutboxRepository,
 	tx *repository.TxManager,
 ) *CourseService {
-	return &CourseService{courses: courses, tx: tx}
+	return &CourseService{courses: courses, outbox: outbox, tx: tx}
 }
 
 // ---------- POST /courses/:id/enroll ----------
@@ -61,15 +63,25 @@ func (s *CourseService) Enroll(c *fiber.Ctx) error {
 		}
 
 		// 3. Ambil satu kursi secara atomik.
-		e, err := repo.IncrementEnrolled(ctx, courseID)
+		var err error
+		enrolled, err = repo.IncrementEnrolled(ctx, courseID)
 		if err != nil {
 			return err
 		}
-		enrolled = e
 
-		// 4. Catat pendaftarannya. Bila ternyata sudah terdaftar (UNIQUE
-		//    course_id + student_id), error di sini membatalkan seluruh
-		//    langkah sebelumnya — termasuk kursi yang barusan diambil.
+		// 4. Catat event-nya ke outbox, memakai transaction yang sama.
+		//    Urutan di dalam transaction tidak mengubah hasil akhir: bila
+		//    langkah 5 gagal, catatan ini ikut dibatalkan bersama
+		//    penambahan kursi pada langkah 3.
+		if err := s.outbox.Insert(ctx, model.EventEnrollmentCreated, model.EnrollmentEvent{
+			UserID: current.StudentID, CourseID: enrolled.ID,
+			CourseCode: enrolled.Code, CourseName: enrolled.Name,
+		}); err != nil {
+			return err
+		}
+
+		// 5. Catat pendaftarannya. Bila ternyata sudah terdaftar, error
+		//    di sini membatalkan seluruh langkah sebelumnya.
 		return repo.InsertEnrollment(ctx, courseID, current.StudentID)
 	})
 	if err != nil {
@@ -111,8 +123,14 @@ func (s *CourseService) Drop(c *fiber.Ctx) error {
 		if err := repo.DeleteEnrollment(ctx, courseID, current.StudentID); err != nil {
 			return err
 		}
-		_, err := repo.DecrementEnrolled(ctx, courseID)
-		return err
+		course, err := repo.DecrementEnrolled(ctx, courseID)
+		if err != nil {
+			return err
+		}
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentCreated, model.EnrollmentEvent{
+			UserID: current.StudentID, CourseID: course.ID,
+			CourseCode: course.Code, CourseName: course.Name,
+		})
 	})
 	if err != nil {
 		return translateCourseError(err)
@@ -157,6 +175,13 @@ func (s *CourseService) Swap(c *fiber.Ctx) error {
 			return err
 		}
 
+		// Nama kelas asal disalin ke event: notifikasi memakai nama yang
+		// dilihat mahasiswa saat ia masih terdaftar.
+		from, err := repo.FindByID(ctx, req.FromCourseID)
+		if err != nil {
+			return err
+		}
+
 		// Keluar dari kelas lama. Bila tidak terdaftar, seluruh
 		// transaction dibatalkan.
 		if err := repo.DeleteEnrollment(ctx, req.FromCourseID, current.StudentID); err != nil {
@@ -172,7 +197,16 @@ func (s *CourseService) Swap(c *fiber.Ctx) error {
 		if _, err := repo.IncrementEnrolled(ctx, req.ToCourseID); err != nil {
 			return err
 		}
-		return repo.InsertEnrollment(ctx, req.ToCourseID, current.StudentID)
+		if err := repo.InsertEnrollment(ctx, req.ToCourseID, current.StudentID); err != nil {
+			return err
+		}
+
+		// Satu event "pindah", bukan dua event "keluar" dan "masuk".
+		// Mahasiswa melakukan satu tindakan, maka ia menerima satu notifikasi.
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentSwapped, model.EnrollmentEvent{
+			UserID: current.StudentID, CourseID: req.ToCourseID,
+			FromCourseCode: from.Code, FromCourseName: from.Name,
+		})
 	})
 	if err != nil {
 		return translateCourseError(err)
