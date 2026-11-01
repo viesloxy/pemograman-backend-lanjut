@@ -20,6 +20,7 @@ type Dependencies struct {
 	Permissions       *helper.PermissionSet
 	StudentService    *service.StudentService
 	AuthService       *service.AuthService
+	CourseService     *service.CourseService
 	SupervisorService *service.SupervisorService
 	ReviewService     *service.ReviewService
 	PortfolioService  *service.PortfolioService
@@ -79,6 +80,7 @@ func Register(app *fiber.App, deps Dependencies) {
 		middleware.RequireJSON,
 		middleware.RequireAuth(deps.JWT))
 	enrollments.Post("/switch", deps.SupervisorService.Switch)
+	enrollments.Post("/swap", deps.CourseService.Swap)
 
 	// --- ulasan kelas (MongoDB) ---
 	courses := api.Group("/courses",
@@ -87,6 +89,15 @@ func Register(app *fiber.App, deps Dependencies) {
 	courses.Get("/:id/reviews", deps.ReviewService.ListByCourse)
 	courses.Get("/:id/reviews/summary", deps.ReviewService.Summary)
 	courses.Post("/:id/reviews", deps.ReviewService.Create)
+
+	// --- KRS: mendaftar dan keluar kelas ---
+	courses.Post("/:id/enroll", deps.CourseService.Enroll)
+	courses.Delete("/:id/enroll", deps.CourseService.Drop)
+
+	// --- ubah kuota kelas (admin) ---
+	courses.Patch("/:id",
+		middleware.RequirePermission(perms, "course:manage"),
+		deps.CourseService.UpdateQuota)
 
 	reviews := api.Group("/reviews",
 		middleware.RequireJSON,

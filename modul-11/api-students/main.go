@@ -62,7 +62,6 @@ func main() {
 	supervisorRepository := repository.NewSupervisorRepository(pool)
 	courseRepository := repository.NewCourseRepository(pool)
 	txManager := repository.NewTxManager(pool)
-
 	mongoDB := mongoClient.Database(config.GetEnv("MONGO_DATABASE", "praktikum_backend"))
 	reviewRepository := repository.NewReviewRepository(mongoDB)
 	if err := reviewRepository.EnsureIndexes(context.Background()); err != nil {
@@ -90,6 +89,7 @@ func main() {
 	)
 	supervisorService := service.NewSupervisorService(
 		supervisorRepository, studentRepository, txManager)
+	courseService := service.NewCourseService(courseRepository, txManager)
 	reviewService := service.NewReviewService(reviewRepository, courseRepository, permissions)
 	portfolioService := service.NewPortfolioService(portfolioRepository, studentRepository)
 
@@ -100,6 +100,7 @@ func main() {
 		Permissions:       permissions,
 		StudentService:    studentService,
 		AuthService:       authService,
+		CourseService:     courseService,
 		SupervisorService: supervisorService,
 		ReviewService:     reviewService,
 		PortfolioService:  portfolioService,
