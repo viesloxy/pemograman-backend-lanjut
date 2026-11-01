@@ -99,9 +99,9 @@ func (r *OutboxRelay) RelayOnce(ctx context.Context) (int, error) {
 				enqueueErr = err
 				break
 			}
-			// PERNAYAAN: id dicatat HANYA setelah enqueue berhasil. Bila
-			// dicatat sebelumnya, event yang gagal masuk Redis ikut
-			// ditandai published — notifikasinya hilang tanpa jejak.
+			// id dicatat HANYA setelah enqueue berhasil. Bila dicatat
+			// sebelumnya, event yang gagal masuk Redis ikut ditandai
+			// published — notifikasinya hilang tanpa jejak (D.3).
 			ids = append(ids, e.ID)
 		}
 
