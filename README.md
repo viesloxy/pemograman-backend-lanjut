@@ -6,7 +6,7 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 
 - **Bahasa:** Go 1.26+
 - **Framework:** [Fiber v2](https://docs.gofiber.io)
-- **Database:** PostgreSQL, MongoDB
+- **Database:** PostgreSQL, MongoDB, Redis (queue)
 - **Tools:** Git, VS Code, Postman
 
 ## Struktur Repositori
@@ -60,6 +60,21 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 - **Studi Kasus:** implementasi materi pertemuan 1 sampai 7 dalam satu API utuh untuk layanan akademik sederhana: pengelolaan data mahasiswa, mata kuliah, dan Kartu Rencana Studi (KRS) dengan dua peran, admin dan mahasiswa, melalui 10 endpoint.
 - **Topik yang diimplementasikan:** clean architecture (struktur baku pertemuan 4), PostgreSQL dengan repository pattern, autentikasi bcrypt + JWT dengan rate limiter login, kontrol akses peran dengan pemeriksaan kepemilikan data, transaksi PostgreSQL dengan row locking untuk aturan kuota dan batas SKS (IPK menentukan 18/21/24 SKS), soft delete, validasi deklaratif dengan go-playground/validator, dan error handling terpusat dengan format respons seragam.
 - **Kode:** [`UTS/siakad-mini/`](./UTS/siakad-mini/) — lengkap dengan migration, seeder (1 admin, 20 mahasiswa, 11 mata kuliah), koleksi Postman di folder [`postman/`](./UTS/siakad-mini/postman/), dan README dokumentasi API.
+
+### Modul 9 — Transactions & Concurrency
+
+- **Topik:** transaksi database dengan TxManager, row locking (`FOR UPDATE`, urutan kunci anti-deadlock), UPDATE bersyarat atomik untuk kuota, optimistic locking (version), uji beban konkurensi.
+- **Tugas:** [`modul-9/api-students/`](./modul-9/api-students/) — penetapan dan pergantian dosen pembimbing menjadi transaksi: satu mahasiswa satu pembimbing dijaga constraint, kuota tidak mungkin terlampaui walau diserang puluhan request serentak.
+
+### Modul 10 — API dengan MongoDB
+
+- **Topik:** document model, BSON/ObjectID, embedding vs referencing, update atomik lewat filter (`FindOneAndUpdate`), index dan aggregation pipeline (`$facet`, `$unwind`), pencegahan NoSQL injection, polyglot persistence.
+- **Tugas:** [`modul-10/api-students/`](./modul-10/api-students/) — ulasan kelas dan portofolio mahasiswa tersimpan di MongoDB berdampingan dengan PostgreSQL; ringkasan ulasan lewat aggregation, portofolio dengan upsert atomik.
+
+### Modul 11 — Background Jobs & Asynchronous Processing
+
+- **Topik:** transactional outbox, relay dengan `FOR UPDATE SKIP LOCKED`, job queue Asynq (producer-broker-worker), at-least-once dan handler idempoten, retry/backoff/SkipRetry, satu kode dua proses dengan graceful shutdown.
+- **Tugas:** [`modul-11/api-students/`](./modul-11/api-students/) — setiap perubahan KRS dikirim email konfirmasi lewat worker terpisah: API hanya menulis outbox (Redis boleh mati, notifikasi tertunda tidak hilang), worker mengirim email tiruan secara idempoten dengan klaim `(outbox_id, user_id)`, plus notifikasi perubahan kuota untuk seluruh peserta kelas.
 
 <!-- Modul berikutnya ditambahkan di sini -->
 
