@@ -96,7 +96,11 @@ func (w *NotificationWorker) HandleSend(ctx context.Context, t *asynq.Task) erro
 	})
 
 	if errors.Is(err, helper.ErrPermanentDelivery) {
-		return fmt.Errorf("%v: %w", asynq.SkipRetry, err)
+		// PERNAYAAN: SkipRetry harus DIBUNGKUS dengan %w. Bila hanya
+		// ditulis dengan %v, namanya ikut menjadi teks pesan tetapi
+		// errors.Is milik Asynq tidak mengenalinya — task tetap di-retry
+		// enam kali untuk kegagalan yang tidak mungkin berhasil.
+		return fmt.Errorf("%w: %v", asynq.SkipRetry, err)
 	}
 	if err != nil {
 		return err
