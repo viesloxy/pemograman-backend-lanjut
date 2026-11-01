@@ -70,10 +70,11 @@ func (s *CourseService) Enroll(c *fiber.Ctx) error {
 		}
 
 		// 4. Catat event-nya ke outbox, memakai transaction yang sama.
-		//    Urutan di dalam transaction tidak mengubah hasil akhir: bila
-		//    langkah 5 gagal, catatan ini ikut dibatalkan bersama
-		//    penambahan kursi pada langkah 3.
-		if err := s.outbox.Insert(ctx, model.EventEnrollmentCreated, model.EnrollmentEvent{
+		//    PERNAYAAN: repo outbox WAJIB di-WithTx — bila tidak, catatan
+		//    ditulis di LUAR transaction: pendaftaran yang batal (409) sudah
+		//    meninggalkan event (notifikasi palsu), dan keduanya bisa tidak
+		//    konsisten.
+		if err := s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentCreated, model.EnrollmentEvent{
 			UserID: current.StudentID, CourseID: enrolled.ID,
 			CourseCode: enrolled.Code, CourseName: enrolled.Name,
 		}); err != nil {
@@ -127,7 +128,7 @@ func (s *CourseService) Drop(c *fiber.Ctx) error {
 		if err != nil {
 			return err
 		}
-		return s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentCreated, model.EnrollmentEvent{
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentDropped, model.EnrollmentEvent{
 			UserID: current.StudentID, CourseID: course.ID,
 			CourseCode: course.Code, CourseName: course.Name,
 		})
@@ -175,9 +176,13 @@ func (s *CourseService) Swap(c *fiber.Ctx) error {
 			return err
 		}
 
-		// Nama kelas asal disalin ke event: notifikasi memakai nama yang
-		// dilihat mahasiswa saat ia masih terdaftar.
+		// Nama kelas asal dan kelas tujuan disalin ke event: notifikasi
+		// memakai nama yang dilihat mahasiswa saat ia masih terdaftar.
 		from, err := repo.FindByID(ctx, req.FromCourseID)
+		if err != nil {
+			return err
+		}
+		to, err := repo.FindByID(ctx, req.ToCourseID)
 		if err != nil {
 			return err
 		}
@@ -204,7 +209,8 @@ func (s *CourseService) Swap(c *fiber.Ctx) error {
 		// Satu event "pindah", bukan dua event "keluar" dan "masuk".
 		// Mahasiswa melakukan satu tindakan, maka ia menerima satu notifikasi.
 		return s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentSwapped, model.EnrollmentEvent{
-			UserID: current.StudentID, CourseID: req.ToCourseID,
+			UserID: current.StudentID, CourseID: to.ID,
+			CourseCode: to.Code, CourseName: to.Name,
 			FromCourseCode: from.Code, FromCourseName: from.Name,
 		})
 	})
