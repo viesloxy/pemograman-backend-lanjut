@@ -119,7 +119,7 @@ func (r *studentPostgresRepository) FindAll(ctx context.Context, q model.ListQue
 func (r *studentPostgresRepository) FindByID(ctx context.Context, id int) (model.Student, error) {
 	var s model.Student
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, nim, name, email, grade, password, role, owner_id, is_active, created_at
+		`SELECT id, nim, name, COALESCE(email, ''), grade, password, role, owner_id, is_active, created_at
 		 FROM students WHERE id = $1`, id,
 	).Scan(&s.ID, &s.NIM, &s.Name, &s.Email, &s.Grade, &s.Password, &s.Role, &s.OwnerID, &s.IsActive, &s.CreatedAt)
 

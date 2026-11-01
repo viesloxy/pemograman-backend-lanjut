@@ -21,6 +21,7 @@ import (
 // lain menerima *fiber.Ctx.
 type NotificationWorker struct {
 	users         repository.StudentRepository
+	courses       repository.CourseRepository
 	notifications repository.NotificationRepository
 	tx            *repository.TxManager
 	mailer        helper.Mailer
@@ -29,13 +30,14 @@ type NotificationWorker struct {
 
 func NewNotificationWorker(
 	users repository.StudentRepository,
+	courses repository.CourseRepository,
 	notifications repository.NotificationRepository,
 	tx *repository.TxManager,
 	mailer helper.Mailer,
 	logger *slog.Logger,
 ) *NotificationWorker {
-	return &NotificationWorker{users: users, notifications: notifications,
-		tx: tx, mailer: mailer, logger: logger}
+	return &NotificationWorker{users: users, courses: courses,
+		notifications: notifications, tx: tx, mailer: mailer, logger: logger}
 }
 
 // HandleSend mengembalikan error untuk meminta Asynq melakukan retry nanti,
@@ -71,37 +73,7 @@ func (w *NotificationWorker) HandleSend(ctx context.Context, t *asynq.Task) erro
 		return fmt.Errorf("%w: %v", asynq.SkipRetry, err)
 	}
 
-	alreadySent := false
-	err = w.tx.WithTxOnce(ctx, func(tx repository.DBTX) error {
-		// Claim dan pengiriman berada di dalam SATU transaction:
-		//   - pengiriman gagal  -> claim ikut dibatalkan; attempt
-		//     berikutnya masih dapat mengirim;
-		//   - pengiriman sukses -> claim di-commit -> attempt berikutnya
-		//     melihat claim ini dan tidak mengirim lagi.
-		// PERNAYAAN: repo notifikasi WAJIB di-WithTx(tx). Bila tidak, claim
-		// langsung commit di koneksi lain: bila pengiriman gagal, claimnya
-		// tetap ada dan attempt berikutnya mengira email sudah terkirim.
-		claimed, err := w.notifications.WithTx(tx).Claim(ctx, model.Notification{
-			OutboxID: job.OutboxID, UserID: user.ID, Channel: "email",
-			Subject: msg.Subject, Body: msg.Body,
-		})
-		if err != nil {
-			return err
-		}
-		if !claimed {
-			alreadySent = true
-			return nil
-		}
-		return w.mailer.Send(ctx, msg)
-	})
-
-	if errors.Is(err, helper.ErrPermanentDelivery) {
-		// PERNAYAAN: SkipRetry harus DIBUNGKUS dengan %w. Bila hanya
-		// ditulis dengan %v, namanya ikut menjadi teks pesan tetapi
-		// errors.Is milik Asynq tidak mengenalinya — task tetap di-retry
-		// enam kali untuk kegagalan yang tidak mungkin berhasil.
-		return fmt.Errorf("%w: %v", asynq.SkipRetry, err)
-	}
+	sent, err := w.deliverOnce(ctx, job.OutboxID, user, msg)
 	if err != nil {
 		return err
 	}
@@ -111,6 +83,113 @@ func (w *NotificationWorker) HandleSend(ctx context.Context, t *asynq.Task) erro
 		slog.Int64("outbox_id", job.OutboxID),
 		slog.String("event", job.EventType),
 		slog.Int("retry", retry),
-		slog.Bool("already_sent", alreadySent))
+		slog.Bool("already_sent", !sent))
+	return nil
+}
+
+// deliverOnce meng-claim lalu mengirim pesan untuk SATU penerima di dalam
+// SATU transaction (aturan yang sama dengan HandleSend versi satu penerima).
+// Mengembalikan true bila pengiriman benar-benar terjadi, false bila claim
+// menunjukkan email ini sudah pernah terkirim.
+func (w *NotificationWorker) deliverOnce(ctx context.Context, outboxID int64, user model.Student, msg model.Message) (bool, error) {
+	sent := false
+	err := w.tx.WithTxOnce(ctx, func(tx repository.DBTX) error {
+		// Claim dan pengiriman berada di dalam SATU transaction:
+		//   - pengiriman gagal  -> claim ikut dibatalkan; attempt
+		//     berikutnya masih dapat mengirim;
+		//   - pengiriman sukses -> claim di-commit -> attempt berikutnya
+		//     melihat claim ini dan tidak mengirim lagi.
+		// PERNAYAAN: repo notifikasi WAJIB di-WithTx(tx). Bila tidak, claim
+		// langsung commit di koneksi lain: bila pengiriman gagal, claimnya
+		// tetap ada dan attempt berikutnya mengira email sudah terkirim.
+		claimed, err := w.notifications.WithTx(tx).Claim(ctx, model.Notification{
+			OutboxID: outboxID, UserID: user.ID, Channel: "email",
+			Subject: msg.Subject, Body: msg.Body,
+		})
+		if err != nil {
+			return err
+		}
+		if !claimed {
+			return nil
+		}
+		sent = true
+		return w.mailer.Send(ctx, msg)
+	})
+	return sent, err
+}
+
+// HandleQuotaChanged mengerjakan event course.quota_changed (D.2): satu
+// event untuk SELURUH peserta kelas.
+//
+// Keputusan perancangan (jawaban D.2.3): task TIDAK dipecah per mahasiswa
+// oleh relay; worker yang memecahnya saat mengerjakan. Setiap penerima
+// di-claim terpisah dengan key (outbox_id, user_id), masing-masing dalam
+// transaction sendiri sehingga koneksi database tidak dipegang lama.
+// Bila email ke-7 dari 40 gagal sementara, task di-retry dan attempt
+// berikutnya hanya mengirim yang BELUM ter-claim — email ke-1 sampai ke-6
+// tidak dikirim ulang. Kegagalan PERMANEN satu alamat tidak meng-archive
+// task: penerima itu dilewati dan dicatat, sisanya tetap terkirim — lebih
+// adil daripada menggagalkan 39 orang karena satu alamat salah.
+func (w *NotificationWorker) HandleQuotaChanged(ctx context.Context, t *asynq.Task) error {
+	var job model.NotificationJob
+	if err := json.Unmarshal(t.Payload(), &job); err != nil {
+		return fmt.Errorf("%w: payload task rusak: %v", asynq.SkipRetry, err)
+	}
+	var event model.QuotaChangedEvent
+	if err := json.Unmarshal(job.Payload, &event); err != nil {
+		return fmt.Errorf("%w: payload event %d rusak: %v", asynq.SkipRetry, job.OutboxID, err)
+	}
+
+	participants, err := w.courses.FindParticipantIDs(ctx, event.CourseID)
+	if err != nil {
+		return err // database sedang bermasalah: layak di-retry
+	}
+
+	skipped := 0
+	for _, pid := range participants {
+		user, err := w.users.FindByID(ctx, pid)
+		if errors.Is(err, repository.ErrNotFound) {
+			// Akun dihapus setelah event dicatat: tidak ada yang bisa
+			// dikirim, dan meng-archive seluruh task karenanya salah.
+			skipped++
+			w.logger.Warn("quota_recipient_skipped",
+				slog.Int64("outbox_id", job.OutboxID), slog.Int("user_id", pid))
+			continue
+		}
+		if err != nil {
+			return err
+		}
+
+		msg, err := BuildQuotaMessage(event, user)
+		if err != nil {
+			return fmt.Errorf("%w: %v", asynq.SkipRetry, err)
+		}
+
+		sent, err := w.deliverOnce(ctx, job.OutboxID, user, msg)
+		if errors.Is(err, helper.ErrPermanentDelivery) {
+			// Alamat tujuan tidak ada: lewati penerima ini, jangan
+			// gambunkan penerima lain.
+			skipped++
+			w.logger.Warn("quota_recipient_skipped",
+				slog.Int64("outbox_id", job.OutboxID), slog.Int("user_id", pid),
+				slog.String("error", err.Error()))
+			continue
+		}
+		if err != nil {
+			// Kegagalan sementara: hentikan; Asynq me-retry task ini dan
+			// penerima yang sudah ter-claim tidak akan dikirim ulang.
+			return err
+		}
+		if !sent {
+			skipped++
+		}
+	}
+
+	retry, _ := asynq.GetRetryCount(ctx)
+	w.logger.Info("quota_changed_processed",
+		slog.Int64("outbox_id", job.OutboxID),
+		slog.Int("recipients", len(participants)),
+		slog.Int("skipped", skipped),
+		slog.Int("retry", retry))
 	return nil
 }

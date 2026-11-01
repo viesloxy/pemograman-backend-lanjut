@@ -41,3 +41,17 @@ func BuildMessage(eventType string, e model.EnrollmentEvent, user model.Student)
 
 	return model.Message{To: to, Subject: subject, Body: body}, nil
 }
+
+// BuildQuotaMessage menyusun pesan perubahan kuota (D.2). Sama seperti
+// BuildMessage: fungsi murni tanpa akses database, Redis, maupun email.
+func BuildQuotaMessage(e model.QuotaChangedEvent, user model.Student) (model.Message, error) {
+	course := e.CourseCode + " " + e.CourseName
+	subject := fmt.Sprintf("KRS: kuota %s berubah menjadi %d", course, e.Quota)
+	body := fmt.Sprintf("Halo %s, kuota kelas %s berubah menjadi %d.", user.Name, course, e.Quota)
+
+	to := user.Email
+	if to == "" {
+		to = strings.ToLower(user.NIM) + "@student.unair.ac.id"
+	}
+	return model.Message{To: to, Subject: subject, Body: body}, nil
+}

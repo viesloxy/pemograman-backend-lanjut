@@ -43,11 +43,14 @@ func (r *notificationPostgresRepository) WithTx(tx DBTX) NotificationRepository 
 // worker itu selesai — lalu melewatinya bila worker itu commit, atau
 // melanjutkan bila worker itu rollback.
 func (r *notificationPostgresRepository) Claim(ctx context.Context, n model.Notification) (bool, error) {
+	// Claim memakai ON CONFLICT (outbox_id, user_id) — sejak migration 011,
+	// satu event boleh menghasilkan banyak notifikasi (satu per penerima),
+	// sehingga idempotency key-nya adalah pasangan event dan penerima.
 	var id int64
 	err := r.db.QueryRow(ctx, `
 		INSERT INTO notifications (outbox_id, user_id, channel, subject, body)
 		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (outbox_id) DO NOTHING
+		ON CONFLICT (outbox_id, user_id) DO NOTHING
 		RETURNING id`,
 		n.OutboxID, n.UserID, n.Channel, n.Subject, n.Body).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {

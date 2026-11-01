@@ -12,6 +12,7 @@ const (
 	EventEnrollmentCreated = "enrollment.created"
 	EventEnrollmentDropped = "enrollment.dropped"
 	EventEnrollmentSwapped = "enrollment.swapped"
+	EventQuotaChanged      = "course.quota_changed"
 )
 
 // TaskSendNotification adalah nama JENIS task (task type); worker memakainya untuk
@@ -19,6 +20,7 @@ const (
 // itu menunggu; worker hanya mengambil task dari queue yang ia dengarkan.
 const (
 	TaskSendNotification = "notification:send"
+	TaskQuotaChanged     = "notification:quota_changed"
 	QueueNotifications   = "notifications"
 )
 
@@ -35,6 +37,16 @@ type EnrollmentEvent struct {
 	CourseName     string `json:"course_name"`
 	FromCourseCode string `json:"from_course_code,omitempty"`
 	FromCourseName string `json:"from_course_name,omitempty"`
+}
+
+// QuotaChangedEvent adalah isi event perubahan kuota kelas oleh admin.
+// Satu event ini ditujukan kepada SELURUH peserta kelas — penerimanya
+// ditentukan worker saat task dikerjakan, bukan saat event dicatat.
+type QuotaChangedEvent struct {
+	CourseID   int    `json:"course_id"`
+	CourseCode string `json:"course_code"`
+	CourseName string `json:"course_name"`
+	Quota      int    `json:"quota"`
 }
 
 // OutboxEvent adalah satu baris tabel outbox.

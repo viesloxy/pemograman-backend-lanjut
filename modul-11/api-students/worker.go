@@ -43,6 +43,7 @@ func startWorker(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool) f
 
 	worker := service.NewNotificationWorker(
 		repository.NewStudentRepository(pool),
+		repository.NewCourseRepository(pool),
 		repository.NewNotificationRepository(pool),
 		txManager, mailer, logger,
 	)
@@ -51,6 +52,7 @@ func startWorker(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool) f
 	// memetakan URL ke handler pada Fiber.
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(model.TaskSendNotification, worker.HandleSend)
+	mux.HandleFunc(model.TaskQuotaChanged, worker.HandleQuotaChanged)
 
 	srv := config.NewWorkerServer(logger)
 	if err := srv.Start(mux); err != nil {

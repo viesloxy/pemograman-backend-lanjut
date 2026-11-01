@@ -80,11 +80,17 @@ func main() {
 		log.Fatalf("menyusun payload: %v", err)
 	}
 
+	// Jenis task mengikuti jenis event — sama dengan aturan relay.
+	taskType := model.TaskSendNotification
+	if eventType == model.EventQuotaChanged {
+		taskType = model.TaskQuotaChanged
+	}
+
 	for i := 1; i <= *copies; i++ {
 		// TaskID sengaja BERBEDA dari milik relay (outbox-<id>) dan antar
 		// salinan: Redis harus menerima semuanya. Yang menjaga agar email
 		// tetap satu adalah claim di database, bukan TaskID.
-		task := asynq.NewTask(model.TaskSendNotification, body,
+		task := asynq.NewTask(taskType, body,
 			asynq.TaskID(fmt.Sprintf("redeliver-%d-%d", id, i)),
 			asynq.Queue(model.QueueNotifications),
 			asynq.MaxRetry(5),

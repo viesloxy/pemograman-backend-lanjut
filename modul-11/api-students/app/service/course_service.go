@@ -240,7 +240,26 @@ func (s *CourseService) UpdateQuota(c *fiber.Ctx) error {
 		return helper.Validation(errs)
 	}
 
-	updated, err := s.courses.UpdateQuota(ctx, id, req.Quota, req.Version)
+	var updated model.Course
+
+	// Sejak D.2, mengubah kuota adalah DUA pernyataan: UPDATE kuota dan
+	// INSERT event ke outbox. Tanpa transaction, kuota bisa berubah sementara
+	// pencatatan eventnya gagal (atau sebaliknya) — peserta akan menerima
+	// notifikasi untuk kuota yang tidak pernah terjadi.
+	err := s.tx.WithTx(ctx, func(tx repository.DBTX) error {
+		repo := s.courses.WithTx(tx)
+
+		u, err := repo.UpdateQuota(ctx, id, req.Quota, req.Version)
+		if err != nil {
+			return err
+		}
+		updated = u
+
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventQuotaChanged, model.QuotaChangedEvent{
+			CourseID: updated.ID, CourseCode: updated.Code,
+			CourseName: updated.Name, Quota: updated.Quota,
+		})
+	})
 	if err != nil {
 		return translateCourseError(err)
 	}

@@ -129,7 +129,13 @@ func (r *OutboxRelay) publish(ctx context.Context, e model.OutboxEvent) error {
 	if err != nil {
 		return fmt.Errorf("menyusun payload task: %w", err)
 	}
-	task := asynq.NewTask(model.TaskSendNotification, payload,
+	// Jenis task menentukan handler yang mengerjakannya: event kuota
+	// punya handler sendiri karena diteruskan ke banyak penerima.
+	taskType := model.TaskSendNotification
+	if e.EventType == model.EventQuotaChanged {
+		taskType = model.TaskQuotaChanged
+	}
+	task := asynq.NewTask(taskType, payload,
 		// TaskID yang diturunkan dari id outbox membuat enqueue ulang
 		// event yang sama ditolak Redis. Ini menutup celah ketika relay
 		// mati SETELAH melakukan enqueue tetapi SEBELUM sempat commit.

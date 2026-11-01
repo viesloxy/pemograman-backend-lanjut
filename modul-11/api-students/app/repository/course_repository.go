@@ -38,6 +38,10 @@ type CourseRepository interface {
 	DecrementEnrolled(ctx context.Context, courseID int) (model.Course, error)
 	InsertEnrollment(ctx context.Context, courseID, studentID int) error
 	DeleteEnrollment(ctx context.Context, courseID, studentID int) error
+
+	// FindParticipantIDs memuat seluruh peserta kelas — dipakai worker
+	// untuk memecah event perubahan kuota menjadi notifikasi per peserta.
+	FindParticipantIDs(ctx context.Context, courseID int) ([]int, error)
 }
 
 type coursePostgresRepository struct{ db DBTX }
@@ -208,4 +212,24 @@ func (r *coursePostgresRepository) DeleteEnrollment(ctx context.Context, courseI
 		return ErrNotEnrolled
 	}
 	return nil
+}
+
+func (r *coursePostgresRepository) FindParticipantIDs(ctx context.Context, courseID int) ([]int, error) {
+	rows, err := r.db.Query(ctx,
+		"SELECT student_id FROM enrollments WHERE course_id = $1 ORDER BY student_id",
+		courseID)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil peserta kelas: %w", err)
+	}
+	defer rows.Close()
+
+	participants := []int{}
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("membaca peserta kelas: %w", err)
+		}
+		participants = append(participants, id)
+	}
+	return participants, rows.Err()
 }
