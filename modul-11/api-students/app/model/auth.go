@@ -5,6 +5,7 @@ import "time"
 type RegisterRequest struct {
 	NIM      string   `json:"nim" validate:"required,nim"`
 	Name     string   `json:"name" validate:"required,min=3,max=100"`
+	Email    *string  `json:"email" validate:"omitnil,email"`
 	Grade    *float64 `json:"grade" validate:"omitnil,min=0,max=100"`
 	Password string   `json:"password" validate:"required,strongpassword"`
 }

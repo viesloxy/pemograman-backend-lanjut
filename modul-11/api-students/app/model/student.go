@@ -6,6 +6,7 @@ type Student struct {
 	ID        int       `json:"id"`
 	NIM       string    `json:"nim"`
 	Name      string    `json:"name"`
+	Email     string    `json:"email,omitempty"`
 	Grade     float64   `json:"grade"`
 	Password  string    `json:"-"`
 	Role      string    `json:"role"`

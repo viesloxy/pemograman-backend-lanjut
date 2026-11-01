@@ -52,6 +52,10 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 
 	req.NIM = strings.TrimSpace(req.NIM)
 	req.Name = strings.TrimSpace(req.Name)
+	var email string
+	if req.Email != nil {
+		email = strings.TrimSpace(*req.Email)
+	}
 
 	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
@@ -65,6 +69,7 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 	created, err := s.students.Create(ctx, model.Student{
 		NIM:      req.NIM,
 		Name:     req.Name,
+		Email:    email,
 		Grade:    gradeValue(req.Grade),
 		Password: hashed,
 		Role:     "user",

@@ -119,9 +119,9 @@ func (r *studentPostgresRepository) FindAll(ctx context.Context, q model.ListQue
 func (r *studentPostgresRepository) FindByID(ctx context.Context, id int) (model.Student, error) {
 	var s model.Student
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, nim, name, grade, password, role, owner_id, is_active, created_at
+		`SELECT id, nim, name, email, grade, password, role, owner_id, is_active, created_at
 		 FROM students WHERE id = $1`, id,
-	).Scan(&s.ID, &s.NIM, &s.Name, &s.Grade, &s.Password, &s.Role, &s.OwnerID, &s.IsActive, &s.CreatedAt)
+	).Scan(&s.ID, &s.NIM, &s.Name, &s.Email, &s.Grade, &s.Password, &s.Role, &s.OwnerID, &s.IsActive, &s.CreatedAt)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -157,10 +157,10 @@ func (r *studentPostgresRepository) Create(ctx context.Context, s model.Student)
 	}
 
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO students (nim, name, grade, is_active, password, role, owner_id)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`INSERT INTO students (nim, name, email, grade, is_active, password, role, owner_id)
+		 VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, $7, $8)
 		 RETURNING id, created_at`,
-		s.NIM, s.Name, s.Grade, s.IsActive, s.Password, s.Role, owner,
+		s.NIM, s.Name, s.Email, s.Grade, s.IsActive, s.Password, s.Role, owner,
 	).Scan(&s.ID, &s.CreatedAt)
 
 	if s.OwnerID == nil {
