@@ -38,7 +38,11 @@ func NewWorkerServer(logger *slog.Logger) *asynq.Server {
 
 		// Worker HANYA mengambil task dari queue yang disebut di sini.
 		// Nama queue harus sama persis dengan yang dipakai relay.
-		Queues: map[string]int{model.TaskSendNotification: 1},
+		// PERNAYAAN: yang menentukan QUEUE adalah QueueNotifications
+		// ("notifications"), bukan TaskSendNotification — itu nama JENIS
+		// task. Salah nama membuat task menunggu selamanya tanpa satu pun
+		// pesan kesalahan.
+		Queues: map[string]int{model.QueueNotifications: 1},
 
 		// Delay sebelum melakukan retry. n adalah jumlah retry yang
 		// SUDAH terjadi, dimulai dari 0, sehingga delay-nya 2, 4, 6, 8, lalu
