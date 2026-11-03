@@ -1,0 +1,37 @@
+# Docker Compose untuk dependensi praktikum (alternatif layanan lokal).
+# Modul 11 dapat berjalan tanpa Docker (Redis portabel + service Windows),
+# tetapi seluruh tumpukan juga dapat dinyalakan dengan:
+#     docker compose up -d
+# Pastikan .env menunjuk ke localhost dengan port yang sama seperti di bawah.
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: praktikum-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "no"]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: praktikum-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: vito123
+      POSTGRES_DB: praktikum_backend
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:7
+    container_name: praktikum-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+volumes:
+  pgdata:
+  mongodata:
