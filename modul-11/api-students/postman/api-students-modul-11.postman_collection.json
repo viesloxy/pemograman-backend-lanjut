@@ -1,14 +1,31 @@
 {
   "info": {
     "name": "API Students — Modul 11 Background Job",
-    "description": "Koleksi uji Modul 11: transactional outbox, relay, worker Asynq, dan notifikasi KRS.\n\nUrutan pakai:\n1. Jalankan Redis, PostgreSQL, MongoDB.\n2. Terminal 1: go run . -role=api   |   Terminal 2: go run . -role=worker\n3. Jalankan folder sesuai skenario uji di modul (C.1 sampai C.5, lalu D.2).\n4. Untuk C.2 matikan Redis dulu; untuk C.3/C.4 ubah MAILER_FAIL_EVERY di .env lalu jalankan ulang worker; untuk C.5 jalankan go run ./tools/redeliver -outbox <id> -copies 5.\n\nVerifikasi email selalu lewat logs/mail.log dan tabel outbox/notifications (query monitoring di modul)."
+    "description": "Koleksi uji Modul 11: transactional outbox, relay, worker Asynq, dan notifikasi KRS.\n\nUrutan pakai:\n1. Jalankan Redis, PostgreSQL, MongoDB.\n2. Terminal 1: go run . -role=api   |   Terminal 2: go run . -role=worker\n3. Jalankan folder sesuai skenario uji di modul (C.1 sampai C.5, lalu D.2).\n4. Untuk C.2 matikan Redis dulu; untuk C.3/C.4 ubah MAILER_FAIL_EVERY di .env lalu jalankan ulang worker; untuk C.5 jalankan go run ./tools/redeliver -outbox <id> -copies 5.\n\nVerifikasi email selalu lewat logs/mail.log dan tabel outbox/notifications (query monitoring di modul).",
+    "_postman_id": "c561d64f-b9b2-4455-b40f-af8d3f80822f",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
-    { "key": "tokenMhsuji", "value": "" },
-    { "key": "tokenSalahalamat", "value": "" },
-    { "key": "tokenAdmin", "value": "" },
-    { "key": "outboxId", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "tokenMhsuji",
+      "value": ""
+    },
+    {
+      "key": "tokenSalahalamat",
+      "value": ""
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "outboxId",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -18,8 +35,16 @@
           "name": "Register mhsuji (dengan email)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"nim\":\"4342210901\",\"name\":\"Mahasiswa Uji KRS\",\"email\":\"mhsuji@student.unair.ac.id\",\"password\":\"UjiKrs#2026\"}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nim\":\"4342210901\",\"name\":\"Mahasiswa Uji KRS\",\"email\":\"mhsuji@student.unair.ac.id\",\"password\":\"UjiKrs#2026\"}"
+            },
             "url": "{{baseUrl}}/auth/register"
           }
         },
@@ -27,8 +52,16 @@
           "name": "Register salahalamat (email .invalid)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"nim\":\"4342210902\",\"name\":\"Salah Alamat Uji\",\"email\":\"salah@kampus.invalid\",\"password\":\"UjiKrs#2026\"}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nim\":\"4342210902\",\"name\":\"Salah Alamat Uji\",\"email\":\"salah@kampus.invalid\",\"password\":\"UjiKrs#2026\"}"
+            },
             "url": "{{baseUrl}}/auth/register",
             "description": "Domain .invalid (RFC 2606) meniru alamat yang tidak pernah ada — memicu kegagalan permanen di C.4."
           }
@@ -37,8 +70,16 @@
           "name": "Register admin",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"nim\":\"4342210900\",\"name\":\"Admin Uji KRS\",\"password\":\"AdminKrs#2026\"}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nim\":\"4342210900\",\"name\":\"Admin Uji KRS\",\"password\":\"AdminKrs#2026\"}"
+            },
             "url": "{{baseUrl}}/auth/register",
             "description": "Setelah mendaftar, naikkan rolenya lewat psql:\nUPDATE students SET role='admin' WHERE nim='4342210900';"
           }
@@ -61,8 +102,16 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"nim\":\"4342210901\",\"password\":\"UjiKrs#2026\"}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nim\":\"4342210901\",\"password\":\"UjiKrs#2026\"}"
+            },
             "url": "{{baseUrl}}/auth/login"
           }
         },
@@ -84,8 +133,16 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"nim\":\"4342210902\",\"password\":\"UjiKrs#2026\"}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nim\":\"4342210902\",\"password\":\"UjiKrs#2026\"}"
+            },
             "url": "{{baseUrl}}/auth/login"
           }
         },
@@ -107,8 +164,16 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"nim\":\"4342210900\",\"password\":\"AdminKrs#2026\"}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nim\":\"4342210900\",\"password\":\"AdminKrs#2026\"}"
+            },
             "url": "{{baseUrl}}/auth/login"
           }
         },
@@ -130,8 +195,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/2/enroll"
           }
@@ -141,8 +212,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/2/enroll",
             "description": "409 tidak boleh meninggalkan jejak di outbox — cek dengan query monitoring."
@@ -152,7 +229,12 @@
           "name": "3. Drop kelas 2 (204)",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
+            ],
             "url": "{{baseUrl}}/courses/2/enroll"
           }
         },
@@ -161,8 +243,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/2/enroll"
           }
@@ -172,10 +260,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\"from_course_id\":2,\"to_course_id\":4}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"from_course_id\":2,\"to_course_id\":4}"
+            },
             "url": "{{baseUrl}}/enrollments/swap"
           }
         },
@@ -183,7 +280,12 @@
           "name": "Cek hasil: notifikasi mhsuji (4 buah, terbaru dulu)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
+            ],
             "url": "{{baseUrl}}/notifications/mine",
             "description": "Tunggu 5 detik. Harapnya: pindah, berhasil terdaftar, keluar, berhasil terdaftar."
           }
@@ -192,7 +294,12 @@
           "name": "Cek hasil: keadaan queue (admin)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
             "url": "{{baseUrl}}/admin/queue"
           }
         }
@@ -206,8 +313,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/5/enroll"
           }
@@ -217,8 +330,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/6/enroll"
           }
@@ -228,8 +347,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/7/enroll"
           }
@@ -238,7 +363,12 @@
           "name": "Cek outbox_pending saat Redis mati (harap 3 + queue_error)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
             "url": "{{baseUrl}}/admin/queue",
             "description": "Nyalakan Redis, tunggu 10 detik, jalankan ulang request ini: pending kembali 0 dan notifikasi mhsuji menjadi 7."
           }
@@ -247,7 +377,12 @@
           "name": "Cek notifikasi setelah Redis menyala (harap 7)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
+            ],
             "url": "{{baseUrl}}/notifications/mine"
           }
         }
@@ -261,8 +396,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/1/enroll",
             "description": "Ulangi untuk kelas 2, 3, 4, 5, 6. Sebelum folder ini: reset11.sql + kosongkan logs/mail.log + flushdb."
@@ -272,7 +413,12 @@
           "name": "Cek notifikasi setelah 20 detik (harap 6)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
+            ],
             "url": "{{baseUrl}}/notifications/mine",
             "description": "Enam = enam = enam: baris notifications, response API ini, dan baris logs/mail.log untuk mhsuji@."
           }
@@ -286,7 +432,12 @@
           "name": "Catat queue.archived sebelum uji (admin)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
             "url": "{{baseUrl}}/admin/queue"
           }
         },
@@ -295,8 +446,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenSalahalamat}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSalahalamat}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/2/enroll",
             "description": "201 membuktikan kegagalan email tidak memengaruhi KRS."
@@ -306,7 +463,12 @@
           "name": "Cek setelah 15 detik: archived +1 tepat, retry 0",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
             "url": "{{baseUrl}}/admin/queue"
           }
         }
@@ -320,8 +482,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
             "url": "{{baseUrl}}/courses/8/enroll",
             "description": "Cari id event: SELECT MAX(id) FROM outbox; pastikan published_at masih NULL, lalu isi variabel outboxId."
@@ -339,7 +507,12 @@
           "name": "Cek notifikasi (tetap satu untuk kelas 8)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
+            ],
             "url": "{{baseUrl}}/notifications/mine"
           }
         }
@@ -353,10 +526,19 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\"quota\":40,\"version\":1}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"quota\":40,\"version\":1}"
+            },
             "url": "{{baseUrl}}/courses/13",
             "description": "Version = nilai version terakhir kelas. Satu event menghasilkan email untuk SELURUH peserta. Untuk bukti D.2.4: MAILER_FAIL_EVERY=3, minimal 5 peserta, lalu redeliver event kuota."
           }
@@ -366,10 +548,19 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\"quota\":50,\"version\":1}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"quota\":50,\"version\":1}"
+            },
             "url": "{{baseUrl}}/courses/13"
           }
         }
@@ -382,7 +573,12 @@
           "name": "Enroll tanpa token (401)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": "{{baseUrl}}/courses/2/enroll"
           }
         },
@@ -390,7 +586,12 @@
           "name": "Admin queue pakai token mahasiswa (403)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
+            ],
             "url": "{{baseUrl}}/admin/queue"
           }
         },
@@ -399,10 +600,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\"from_course_id\":2,\"to_course_id\":2}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"from_course_id\":2,\"to_course_id\":2}"
+            },
             "url": "{{baseUrl}}/enrollments/swap"
           }
         },
@@ -410,7 +620,12 @@
           "name": "Drop kelas yang tidak didaftar (409 NOT_ENROLLED)",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{tokenMhsuji}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMhsuji}}"
+              }
+            ],
             "url": "{{baseUrl}}/courses/12/enroll"
           }
         }
