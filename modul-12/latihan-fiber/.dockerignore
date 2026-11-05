@@ -1,0 +1,12 @@
+# File yang TIDAK ikut dikirim ke Docker saat build.
+
+# Secret tidak boleh masuk image. Siapa pun yang memegang image dapat
+# membaca seluruh isinya, termasuk file yang "tersembunyi".
+.env
+.env.*
+
+# Hasil kerja lokal yang tidak dibutuhkan untuk build.
+.git
+logs/
+*.log
+coverage.out

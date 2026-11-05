@@ -1,0 +1,108 @@
+# Seluruh sistem dalam satu perintah: docker compose up -d --build
+#
+# Nilai secret (JWT_SECRET, DB_PASSWORD) dibaca dari file .env di folder
+# yang sama — file .env yang sudah Anda pakai sejak Modul 3. Compose hanya
+# mengambil variabel yang disebut di file ini dengan sintaks ${...}.
+
+# Konfigurasi bersama untuk api dan worker: image yang sama, environment
+# yang sama. Hanya -role yang berbeda.
+x-app: &app
+  build: .
+  image: latihan-fiber:local
+  restart: unless-stopped
+  environment:
+    APP_PORT: "3000"
+    LOG_LEVEL: info
+    DB_HOST: postgres          # nama service, bukan localhost
+    DB_PORT: "5432"
+    DB_USER: postgres
+    DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi di .env}
+    DB_NAME: praktikum_backend
+    DB_SSLMODE: disable
+    DB_MAX_CONNS: "10"
+    JWT_SECRET: ${JWT_SECRET:?JWT_SECRET wajib diisi di .env}
+    JWT_ISSUER: praktikum-backend
+    JWT_ACCESS_TTL_MINUTES: "15"
+    JWT_REFRESH_TTL_DAYS: "7"
+    ALLOWED_ORIGINS: http://localhost:5173
+    MONGO_URI: mongodb://mongo:27017
+    MONGO_DATABASE: praktikum_backend
+    REDIS_ADDR: redis:6379
+    SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+  depends_on:
+    postgres:
+      condition: service_healthy
+    mongo:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  api:
+    <<: *app
+    command: ["-role=api"]
+    ports:
+      # host:container. Port 8080 di komputer Anda diteruskan ke port 3000
+      # di dalam container, agar tidak bentrok dengan "go run ." di port 3000.
+      - "8080:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    <<: *app
+    command: ["-role=worker"]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi di .env}
+      POSTGRES_DB: praktikum_backend
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Seluruh file .sql di folder ini dijalankan berurutan menurut nama,
+      # HANYA saat volume pgdata masih kosong (pertama kali dijalankan).
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d praktikum_backend"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:9.0
+    restart: unless-stopped
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    # appendonly yes: setiap perubahan dicatat ke disk, sehingga task di
+    # queue tidak hilang bila container redis dijalankan ulang (Modul 11, A.6).
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+# Volume menyimpan data di luar container. Container boleh dihapus dan
+# dibuat ulang; datanya tetap ada sampai volume-nya sendiri dihapus.
+volumes:
+  pgdata:
+  mongodata:
+  redisdata:
