@@ -17,12 +17,25 @@ import (
 	"latihan-fiber/app/service"
 	"latihan-fiber/config"
 	"latihan-fiber/database"
+	_ "latihan-fiber/docs" // hasil swag init; mendaftarkan spesifikasi ke swagger
 	"latihan-fiber/helper"
 	"latihan-fiber/route"
 )
 
 const minSecretLength = 32
 
+// Blok komentar di bawah ini adalah informasi UMUM dokumentasi API. swag
+// hanya membacanya dari file yang disebut pada flag -g (bawaannya main.go).
+//
+// @title                       API KRS Praktikum Backend Lanjut
+// @version                     1.0
+// @description                 API pendaftaran kelas (KRS), ulasan kelas, dan notifikasi.
+// @description                 Seluruh endpoint selain /auth memerlukan access token.
+// @BasePath                    /api/v1
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 Isi dengan: Bearer <access_token>
 func main() {
 	config.LoadEnv()
 	logger := config.NewLogger()
@@ -148,6 +161,7 @@ func startAPI(logger *slog.Logger, pool *pgxpool.Pool) *fiber.App {
 		ReviewService: service.NewReviewService(reviewRepository, courseRepository, permissions),
 		NotificationService: service.NewNotificationService(
 			notificationRepository, outboxRepository, inspector),
+		EnableSwagger: config.GetEnv("SWAGGER_ENABLED", "false") == "true",
 	})
 
 	// Sumber daya milik API ditutup setelah server HTTP berhenti.

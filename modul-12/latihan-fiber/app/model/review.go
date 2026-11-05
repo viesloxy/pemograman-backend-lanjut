@@ -70,3 +70,19 @@ type TagCount struct {
 	Tag   string `json:"tag"`
 	Total int    `json:"total"`
 }
+
+// ReviewPage adalah response GET /courses/{id}/reviews. Bentuk meta-nya
+// berbeda dari WebResponse (cursor, bukan nomor halaman), maka ia memiliki
+// struct sendiri agar dapat didokumentasikan dengan jujur.
+type ReviewPage struct {
+	Success bool           `json:"success"`
+	Message string         `json:"message"`
+	Data    []Review       `json:"data"`
+	Meta    ReviewPageMeta `json:"meta"`
+}
+
+type ReviewPageMeta struct {
+	Limit      int    `json:"limit"`
+	HasMore    bool   `json:"has_more"`
+	NextBefore string `json:"next_before"`
+}
