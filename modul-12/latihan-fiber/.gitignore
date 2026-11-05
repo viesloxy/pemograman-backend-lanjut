@@ -1,0 +1,8 @@
+# berkas lokal (secret) — jangan di-commit
+.env
+
+# binary hasil kompilasi
+*.exe
+
+# keluaran log
+logs/
