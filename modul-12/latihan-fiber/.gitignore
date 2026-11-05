@@ -1,8 +1,13 @@
 # berkas lokal (secret) — jangan di-commit
 .env
+.env.*
+!.env.example
 
 # binary hasil kompilasi
 *.exe
 
 # keluaran log
 logs/
+
+# hasil coverage
+coverage.out
