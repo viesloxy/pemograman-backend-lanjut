@@ -97,3 +97,13 @@ type CursorMeta struct {
 	NextCursor string `json:"next_cursor,omitempty"`
 	HasMore    bool   `json:"has_more"`
 }
+
+// Profile adalah isi field data pada GET /auth/me.
+//
+// Sebelumnya response ini disusun dengan fiber.Map. Hasil JSON-nya sama
+// persis, tetapi map tidak memiliki nama dan bentuk yang dapat dibaca swag,
+// sehingga dokumentasi API tidak dapat menjelaskan isinya (Langkah 10).
+type Profile struct {
+	User        User     `json:"user"`
+	Permissions []string `json:"permissions"`
+}

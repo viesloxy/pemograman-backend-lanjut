@@ -1,5 +1,12 @@
 basePath: /api/v1
 definitions:
+  model.AssignRoleRequest:
+    properties:
+      role:
+        type: string
+    required:
+    - role
+    type: object
   model.Course:
     properties:
       code:
@@ -37,6 +44,24 @@ definitions:
     required:
     - comment
     - rating
+    type: object
+  model.CreateUserRequest:
+    properties:
+      email:
+        maxLength: 120
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+      username:
+        maxLength: 30
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   model.ErrorResponse:
     properties:
@@ -87,6 +112,27 @@ definitions:
         type: string
       user_id:
         type: integer
+    type: object
+  model.PatchUserRequest:
+    properties:
+      email:
+        maxLength: 120
+        type: string
+      is_active:
+        type: boolean
+      username:
+        maxLength: 30
+        minLength: 3
+        type: string
+    type: object
+  model.Profile:
+    properties:
+      permissions:
+        items:
+          type: string
+        type: array
+      user:
+        $ref: '#/definitions/model.User'
     type: object
   model.QueueInfo:
     properties:
@@ -146,6 +192,21 @@ definitions:
     - password
     - username
     type: object
+  model.ReplaceUserRequest:
+    properties:
+      email:
+        maxLength: 120
+        type: string
+      is_active:
+        type: boolean
+      username:
+        maxLength: 30
+        minLength: 3
+        type: string
+    required:
+    - email
+    - username
+    type: object
   model.Reply:
     properties:
       body:
@@ -158,6 +219,15 @@ definitions:
         type: integer
       username:
         type: string
+    type: object
+  model.ReplyRequest:
+    properties:
+      body:
+        maxLength: 500
+        minLength: 2
+        type: string
+    required:
+    - body
     type: object
   model.Review:
     properties:
@@ -210,6 +280,23 @@ definitions:
       next_before:
         type: string
     type: object
+  model.ReviewSummary:
+    properties:
+      average_rating:
+        type: number
+      count:
+        type: integer
+      course_id:
+        type: integer
+      distribution:
+        additionalProperties:
+          type: integer
+        type: object
+      top_tags:
+        items:
+          $ref: '#/definitions/model.TagCount'
+        type: array
+    type: object
   model.SwapRequest:
     properties:
       from_course_id:
@@ -221,6 +308,13 @@ definitions:
     required:
     - from_course_id
     - to_course_id
+    type: object
+  model.TagCount:
+    properties:
+      tag:
+        type: string
+      total:
+        type: integer
     type: object
   model.TokenPair:
     properties:
@@ -246,6 +340,22 @@ definitions:
     required:
     - quota
     - version
+    type: object
+  model.UpdateReviewRequest:
+    properties:
+      comment:
+        maxLength: 1000
+        minLength: 10
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+      tags:
+        items:
+          type: string
+        maxItems: 5
+        type: array
     type: object
   model.User:
     properties:
@@ -338,6 +448,57 @@ paths:
           schema:
             $ref: '#/definitions/model.ErrorResponse'
       summary: Login dan mendapatkan pasangan token
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token yang dikirim langsung dicabut. Access token tetap
+        berlaku sampai kedaluwarsa.
+      parameters:
+      - description: Refresh token yang akan dicabut
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.WebResponse'
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Mencabut refresh token (logout)
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Mengembalikan data user beserta daftar permission role-nya.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Profile'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Profil akun yang sedang login
       tags:
       - auth
   /auth/refresh:
@@ -663,6 +824,41 @@ paths:
       summary: Menulis ulasan untuk sebuah kelas
       tags:
       - reviews
+  /courses/{id}/reviews/summary:
+    get:
+      description: Statistik umum, distribusi rating, dan tag terpopuler — hasil aggregation
+        pipeline MongoDB.
+      parameters:
+      - description: ID kelas
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.ReviewSummary'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Kelas tidak ada
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Ringkasan ulasan sebuah kelas
+      tags:
+      - reviews
   /courses/mine:
     get:
       produces:
@@ -753,6 +949,547 @@ paths:
       summary: Notifikasi milik mahasiswa yang sedang login
       tags:
       - notifications
+  /reviews/{id}:
+    delete:
+      description: Pemilik ulasan selalu boleh; pemegang permission review:moderate
+        boleh menghapus ulasan siapa pun.
+      parameters:
+      - description: ID ulasan (ObjectID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Berhasil dihapus; tanpa body
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Bukan pemilik ulasan
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menghapus ulasan
+      tags:
+      - reviews
+    get:
+      parameters:
+      - description: ID ulasan (ObjectID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Review'
+              type: object
+        "400":
+          description: ID ulasan tidak valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail satu ulasan
+      tags:
+      - reviews
+    patch:
+      consumes:
+      - application/json
+      description: Hanya field yang dikirim yang berubah. Pemilik ulasan ditentukan
+        di dalam filter MongoDB, bukan di Go.
+      parameters:
+      - description: ID ulasan (ObjectID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Field yang ingin diubah
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateReviewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Review'
+              type: object
+        "400":
+          description: ID ulasan tidak valid, body bukan JSON, atau tidak ada field
+            yang diubah
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Bukan pemilik ulasan
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengubah ulasan milik sendiri
+      tags:
+      - reviews
+  /reviews/{id}/helpful:
+    post:
+      description: Satu mahasiswa hanya boleh menilai satu kali per ulasan; penilaian
+        ulasan sendiri ditolak.
+      parameters:
+      - description: ID ulasan (ObjectID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Review'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: OWN_REVIEW atau ALREADY_VOTED
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menilai ulasan membantu
+      tags:
+      - reviews
+  /reviews/{id}/replies:
+    post:
+      consumes:
+      - application/json
+      description: Balasan disimpan di dalam dokumen ulasan (embedding); jumlahnya
+        dibatasi 50 secara atomik.
+      parameters:
+      - description: ID ulasan (ObjectID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Isi balasan
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ReplyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Review'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: 'REPLY_LIMIT: jumlah balasan sudah mencapai batas'
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Membalas sebuah ulasan
+      tags:
+      - reviews
+  /users:
+    get:
+      description: |-
+        Cursor pagination: kirim meta.next_cursor sebagai parameter cursor untuk halaman berikutnya.
+        Format response dapat dipilih lewat header Accept: application/json atau text/csv.
+        Membutuhkan permission user:list.
+      parameters:
+      - default: 10
+        description: Jumlah per halaman, 1 sampai 50
+        in: query
+        name: limit
+        type: integer
+      - description: Saring username atau email yang mengandung teks ini
+        in: query
+        name: search
+        type: string
+      - description: Saring menurut status aktif
+        in: query
+        name: is_active
+        type: boolean
+      - description: 'Cursor: meta.next_cursor dari halaman sebelumnya'
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.User'
+                  type: array
+              type: object
+        "400":
+          description: Cursor atau is_active tidak valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "406":
+          description: Format Accept tidak tersedia
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Daftar seluruh user
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Membutuhkan permission user:update:any. Berbeda dengan /auth/register,
+        role dapat dipilih dan password di-hash di sini.
+      parameters:
+      - description: Data akun baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: URL user yang baru dibuat
+              type: string
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: Username sudah dipakai
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Membuat akun baru (admin)
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: Membutuhkan permission user:delete. Menghapus akun sendiri ditolak.
+      parameters:
+      - description: ID user
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Berhasil dihapus; tanpa body
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Tidak boleh menghapus akun sendiri
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menghapus user (admin)
+      tags:
+      - users
+    get:
+      description: Pemilik data boleh melihat data sendiri; user lain membutuhkan
+        permission user:read:any.
+      parameters:
+      - description: ID user
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
+        "400":
+          description: ID bukan angka positif
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail satu user
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Hanya field yang dikirim yang berubah; field yang tidak dikirim
+        bernilai nil dan diabaikan.
+      parameters:
+      - description: ID user
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Field yang ingin diubah
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.PatchUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
+        "400":
+          description: Tidak ada field yang diubah
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengubah sebagian data user (PATCH)
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Semua field wajib dikirim. Pemilik data boleh mengubah data sendiri;
+        user lain membutuhkan permission user:update:any.
+      parameters:
+      - description: ID user
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data user yang lengkap
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ReplaceUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengganti data user seluruhnya (PUT)
+      tags:
+      - users
+  /users/{id}/role:
+    patch:
+      consumes:
+      - application/json
+      description: Membutuhkan permission role:assign; aturan tambahan diperiksa di
+        service (ValidateAssignRole).
+      parameters:
+      - description: ID user
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.AssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengubah role user
+      tags:
+      - users
 securityDefinitions:
   BearerAuth:
     description: 'Isi dengan: Bearer <access_token>'
