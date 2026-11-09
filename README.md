@@ -76,6 +76,11 @@ Repositori berisi seluruh pekerjaan praktikum mata kuliah **Pemrograman Backend 
 - **Topik:** transactional outbox, relay dengan `FOR UPDATE SKIP LOCKED`, job queue Asynq (producer-broker-worker), at-least-once dan handler idempoten, retry/backoff/SkipRetry, satu kode dua proses dengan graceful shutdown.
 - **Tugas:** [`modul-11/api-students/`](./modul-11/api-students/) — setiap perubahan KRS dikirim email konfirmasi lewat worker terpisah: API hanya menulis outbox (Redis boleh mati, notifikasi tertunda tidak hilang), worker mengirim email tiruan secara idempoten dengan klaim `(outbox_id, user_id)`, plus notifikasi perubahan kuota untuk seluruh peserta kelas.
 
+### Modul 12 — Testing & Quality, API Documentation, dan Docker Deployment
+
+- **Topik:** piramida test (unit, integration, end-to-end), table-driven test, test double (fake dengan embedding interface), component test dengan `app.Test`, integration test pada database terpisah dengan `TestMain`, pengukuran kualitas test (coverage, `-shuffle`, mutation testing), dokumentasi OpenAPI/Swagger dengan swaggo, multi-stage Docker build, dan docker compose.
+- **Tugas:** [`modul-12/latihan-fiber/`](./modul-12/latihan-fiber/) — proyek KRS + ulasan + notifikasi Modul 11 disusun ulang sebagai `latihan-fiber` dan dilengkapi: test suite (unit test aturan murni, fake repository, component test endpoint, white-box test pemetaan error, integration test repository dan endpoint KRS termasuk swap kelas penuh dan keluar kelas), dokumentasi Swagger untuk 20 endpoint dengan gerbang `SWAGGER_ENABLED`, serta deployment lima service (api, worker, PostgreSQL, MongoDB, Redis) dengan satu perintah `docker compose up -d --build`.
+
 <!-- Modul berikutnya ditambahkan di sini -->
 
 ## Cara Menjalankan
@@ -91,6 +96,8 @@ go run main.go
 Proyek yang terdiri dari beberapa berkas/paket (modul 2 sampai 7) dijalankan dengan `go run .` dari folder proyeknya. Proyek modul 3 sampai 7 membutuhkan PostgreSQL berjalan dan berkas `.env`. Proyek modul 5 sampai 7 juga membutuhkan `JWT_SECRET` yang valid. Unit test: `go test ./app/service/ ./helper/ -v` dari folder proyeknya.
 
 Proyek UTS (`UTS/siakad-mini/`) dijalankan dengan `go run .` dari folder proyeknya: membutuhkan database `siakad_mini`, migration, seeder, `.env` dengan `JWT_SECRET` minimal 32 karakter, dan unit testnya berjalan dengan `go test ./...`. Rincian lengkap ada pada [`UTS/siakad-mini/README.md`](./UTS/siakad-mini/README.md).
+
+Proyek modul 12 (`modul-12/latihan-fiber/`) membutuhkan PostgreSQL, MongoDB, dan Redis berjalan serta `.env` (lihat `.env.example`). Unit test: `go test ./...`. Integration test: `go test -tags=integration -count=1 ./tests/integration/` — membutuhkan database `praktikum_backend_test` dan berkas `.env.test`. Seluruh sistem juga dapat dijalankan sekaligus dengan `docker compose up -d --build`; Swagger UI tersedia di `http://localhost:8080/swagger/index.html` saat `SWAGGER_ENABLED=true`.
 
 ## Author
 
